@@ -548,13 +548,6 @@
             html += `<div class="field-content problem-content">${escapeHtml(entry.problem)}</div>`;
             html += '</div>';
             
-            // Model Solution
-            html += '<button class="collapsible solution-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon solution-icon" style="display: inline-flex; margin-right: 8px;">AI</span>Model-Generated Solution</span><span></span></button>';
-            html += '<div class="collapsible-content">';
-            html += '<div class="field" style="margin-top: 12px;">';
-            html += `<div class="field-content solution-content">${escapeHtml(entry.model_solution)}</div>`;
-            html += '</div></div>';
-            
             // Reference Solution
             html += '<button class="collapsible reference-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon reference-icon" style="display: inline-flex; margin-right: 8px;">✓</span>Reference Solution</span><span></span></button>';
             html += '<div class="collapsible-content">';
@@ -569,6 +562,14 @@
             html += `<div class="field-content marking-content">${escapeHtml(entry.marking_scheme)}</div>`;
             html += '</div></div>';
             
+
+            // Model Solution
+            html += '<button class="collapsible solution-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon solution-icon" style="display: inline-flex; margin-right: 8px;">AI</span>Model-Generated Solution</span><span></span></button>';
+            html += '<div class="collapsible-content">';
+            html += '<div class="field" style="margin-top: 12px;">';
+            html += `<div class="field-content solution-content">${escapeHtml(entry.model_solution)}</div>`;
+            html += '</div></div>';
+
             html += '</div>';
             
             document.getElementById('entryContainer').innerHTML = html;

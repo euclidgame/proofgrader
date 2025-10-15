@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProofBench Dataset Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700;800&family=Noto+Serif:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)'], ['$', '$']],
+                displayMath: [['\\[', '\\]'], ['$$', '$$']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.75;
+            color: #333;
+            background: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 30px;
+        }
+
+        /* Header */
+        header {
+            padding: 60px 0 40px;
+            text-align: center;
+            background: #fff;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        h1 {
+            font-family: 'Noto Serif', Georgia, serif;
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        .subtitle {
+            font-size: 1.05em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .back-link {
+            display: inline-block;
+            padding: 10px 24px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: background 0.2s;
+        }
+
+        .back-link:hover {
+            background: #3367d6;
+        }
+
+        /* Controls */
+        .controls {
+            background: #fafafa;
+            padding: 30px;
+            margin: 40px 0;
+            border-radius: 4px;
+            border: 1px solid #e8e8e8;
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .controls-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-item label {
+            font-size: 0.8em;
+            color: #777;
+            font-weight: 600;
+        }
+
+        .filter-item select {
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95em;
+            color: #333;
+        }
+
+        .filter-item select:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.95em;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #3367d6;
+        }
+
+        .btn:disabled {
+            background: #ddd;
+            cursor: not-allowed;
+        }
+
+        .entry-info {
+            font-size: 1em;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box input {
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95em;
+            width: 150px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+
+        /* Entry Display */
+        .entry-container {
+            background: #fff;
+            padding: 50px;
+            margin-bottom: 40px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e8e8e8;
+        }
+
+        .metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 25px;
+            margin-bottom: 40px;
+            background: #fafafa;
+            border-radius: 4px;
+        }
+
+        .metadata-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .metadata-label {
+            font-size: 0.75em;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .metadata-value {
+            font-size: 1.1em;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .rating {
+            display: inline-block;
+            padding: 6px 14px;
+            background: #4285f4;
+            color: white;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 1.2em;
+        }
+
+        .field {
+            margin-bottom: 35px;
+        }
+
+        .field-label {
+            font-size: 0.95em;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+
+        .field-content {
+            font-size: 1.02em;
+            color: #444;
+            line-height: 1.85;
+            padding: 25px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-left: 3px solid;
+        }
+
+        /* Color-coded sections */
+        .problem-label { color: #1e40af; }
+        .problem-icon { background: #dbeafe; color: #1e40af; }
+        .problem-content { background: #f0f9ff; border-left-color: #3b82f6; }
+
+        .solution-label { color: #7c3aed; }
+        .solution-icon { background: #e9d5ff; color: #7c3aed; }
+        .solution-content { background: #faf5ff; border-left-color: #8b5cf6; }
+
+        .reference-label { color: #059669; }
+        .reference-icon { background: #d1fae5; color: #059669; }
+        .reference-content { background: #f0fdf4; border-left-color: #10b981; }
+
+        .marking-label { color: #d97706; }
+        .marking-icon { background: #fef3c7; color: #d97706; }
+        .marking-content { background: #fffbeb; border-left-color: #f59e0b; }
+
+        /* Collapsible */
+        .collapsible {
+            cursor: pointer;
+            padding: 14px 20px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            font-size: 0.95em;
+            font-weight: 700;
+            margin-top: 12px;
+            transition: all 0.2s;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .solution-btn { background: #f3e8ff; color: #7c3aed; border-left: 3px solid #8b5cf6; }
+        .solution-btn:hover { background: #e9d5ff; }
+
+        .reference-btn { background: #d1fae5; color: #059669; border-left: 3px solid #10b981; }
+        .reference-btn:hover { background: #a7f3d0; }
+
+        .marking-btn { background: #fef3c7; color: #d97706; border-left: 3px solid #f59e0b; }
+        .marking-btn:hover { background: #fde68a; }
+
+        .collapsible:after {
+            content: '+';
+            font-size: 1.5em;
+            line-height: 0.8;
+        }
+
+        .collapsible.active:after {
+            content: "−";
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 100px 20px;
+            font-size: 1.1em;
+            color: #999;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #4285f4;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 25px;
+            border-left: 3px solid #ef4444;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            h1 { font-size: 2em; }
+            .container { padding: 0 20px; }
+            .controls-row { flex-direction: column; align-items: stretch; }
+            .search-box { width: 100%; }
+            .search-box input { width: 100%; }
+            .filter-group { width: 100%; flex-direction: column; }
+            .filter-item { width: 100%; }
+            .filter-item select { width: 100%; }
+            .entry-container { padding: 30px 20px; }
+            .metadata { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>ProofBench Dataset Viewer</h1>
+            <p class="subtitle">Browse 435 expert-annotated math proof solutions</p>
+            <a href="index.html" class="back-link">← Back to Main Page</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <div class="controls-row">
+                <div class="nav-buttons">
+                    <button class="btn" id="prevBtn" onclick="previousEntry()">← Previous</button>
+                    <button class="btn" id="nextBtn" onclick="nextEntry()">Next →</button>
+                </div>
+                <div class="entry-info">
+                    Entry <span id="currentEntry">1</span> of <span id="totalEntries">435</span>
+                </div>
+                <div class="search-box">
+                    <input type="number" id="jumpTo" placeholder="Jump to #" min="1" max="435">
+                    <button class="btn" onclick="jumpToEntry()">Go</button>
+                </div>
+            </div>
+
+            <div class="controls-row">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="problemFilter">Problem</label>
+                        <select id="problemFilter" onchange="applyFilters()">
+                            <option value="">All Problems</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="generatorFilter">Generator</label>
+                        <select id="generatorFilter" onchange="applyFilters()">
+                            <option value="">All Generators</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="ratingFilter">Rating</label>
+                        <select id="ratingFilter" onchange="applyFilters()">
+                            <option value="">All Ratings</option>
+                            <option value="0">0/7</option>
+                            <option value="1">1/7</option>
+                            <option value="2">2/7</option>
+                            <option value="3">3/7</option>
+                            <option value="4">4/7</option>
+                            <option value="5">5/7</option>
+                            <option value="6">6/7</option>
+                            <option value="7">7/7</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading dataset...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="entryContainer" style="display: none;"></div>
+    </div>
+
+    <script>
+        let dataset = [];
+        let filteredDataset = [];
+        let currentIndex = 0;
+
+        async function loadDataset() {
+            try {
+                const response = await fetch('dataset/final_dataset.jsonl');
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+                dataset = lines.map(line => JSON.parse(line));
+                filteredDataset = [...dataset];
+                
+                populateFilters();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('entryContainer').style.display = 'block';
+                document.getElementById('totalEntries').textContent = dataset.length;
+                document.getElementById('jumpTo').max = dataset.length;
+                
+                displayEntry(0);
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Error loading dataset: ' + error.message;
+            }
+        }
+
+        function populateFilters() {
+            const problemIds = [...new Set(dataset.map(e => e.problem_id))].sort();
+            const generators = [...new Set(dataset.map(e => e.generator))].sort();
+            
+            const problemFilter = document.getElementById('problemFilter');
+            const generatorFilter = document.getElementById('generatorFilter');
+            
+            problemIds.forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = id;
+                problemFilter.appendChild(option);
+            });
+            
+            generators.forEach(gen => {
+                const option = document.createElement('option');
+                option.value = gen;
+                option.textContent = gen;
+                generatorFilter.appendChild(option);
+            });
+        }
+
+        function applyFilters() {
+            const problemFilter = document.getElementById('problemFilter').value;
+            const generatorFilter = document.getElementById('generatorFilter').value;
+            const ratingFilter = document.getElementById('ratingFilter').value;
+            
+            filteredDataset = dataset.filter(entry => {
+                if (problemFilter && entry.problem_id !== problemFilter) return false;
+                if (generatorFilter && entry.generator !== generatorFilter) return false;
+                if (ratingFilter && entry.expert_rating.toString() !== ratingFilter) return false;
+                return true;
+            });
+            
+            document.getElementById('totalEntries').textContent = filteredDataset.length;
+            document.getElementById('jumpTo').max = filteredDataset.length;
+            
+            if (filteredDataset.length > 0) {
+                displayEntry(0);
+            } else {
+                document.getElementById('entryContainer').innerHTML = 
+                    '<div class="entry-container"><p style="text-align: center; color: #999; padding: 60px;">No entries match the selected filters.</p></div>';
+            }
+        }
+
+        function displayEntry(index) {
+            if (index < 0 || index >= filteredDataset.length) return;
+            
+            currentIndex = index;
+            const entry = filteredDataset[index];
+            
+            document.getElementById('currentEntry').textContent = index + 1;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === filteredDataset.length - 1;
+            
+            let html = '<div class="entry-container">';
+            
+            // Metadata
+            html += '<div class="metadata">';
+            html += `<div class="metadata-item"><div class="metadata-label">Problem ID</div><div class="metadata-value">${entry.problem_id}</div></div>`;
+            html += `<div class="metadata-item"><div class="metadata-label">Generator</div><div class="metadata-value">${entry.generator}</div></div>`;
+            html += `<div class="metadata-item"><div class="metadata-label">Expert Rating</div><div class="metadata-value"><span class="rating">${entry.expert_rating}/7</span></div></div>`;
+            if (entry.metadata) {
+                html += `<div class="metadata-item"><div class="metadata-label">Contest</div><div class="metadata-value">${entry.metadata.contest} ${entry.metadata.contest_year}</div></div>`;
+            }
+            html += '</div>';
+            
+            // Problem
+            html += '<div class="field">';
+            html += '<div class="field-label problem-label"><span class="field-icon problem-icon">?</span>Problem Statement</div>';
+            html += `<div class="field-content problem-content">${escapeHtml(entry.problem)}</div>`;
+            html += '</div>';
+            
+            // Model Solution
+            html += '<button class="collapsible solution-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon solution-icon" style="display: inline-flex; margin-right: 8px;">AI</span>Model-Generated Solution</span><span></span></button>';
+            html += '<div class="collapsible-content">';
+            html += '<div class="field" style="margin-top: 12px;">';
+            html += `<div class="field-content solution-content">${escapeHtml(entry.model_solution)}</div>`;
+            html += '</div></div>';
+            
+            // Reference Solution
+            html += '<button class="collapsible reference-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon reference-icon" style="display: inline-flex; margin-right: 8px;">✓</span>Reference Solution</span><span></span></button>';
+            html += '<div class="collapsible-content">';
+            html += '<div class="field" style="margin-top: 12px;">';
+            html += `<div class="field-content reference-content">${escapeHtml(entry.reference_solution)}</div>`;
+            html += '</div></div>';
+            
+            // Marking Scheme
+            html += '<button class="collapsible marking-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon marking-icon" style="display: inline-flex; margin-right: 8px;">★</span>Marking Scheme</span><span></span></button>';
+            html += '<div class="collapsible-content">';
+            html += '<div class="field" style="margin-top: 12px;">';
+            html += `<div class="field-content marking-content">${escapeHtml(entry.marking_scheme)}</div>`;
+            html += '</div></div>';
+            
+            html += '</div>';
+            
+            document.getElementById('entryContainer').innerHTML = html;
+            renderMath();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderMath() {
+            if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                MathJax.typesetPromise().catch((err) => console.log('MathJax error:', err));
+            } else if (typeof MathJax !== 'undefined' && MathJax.Hub) {
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            } else {
+                setTimeout(renderMath, 100);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function previousEntry() {
+            if (currentIndex > 0) displayEntry(currentIndex - 1);
+        }
+
+        function nextEntry() {
+            if (currentIndex < filteredDataset.length - 1) displayEntry(currentIndex + 1);
+        }
+
+        function jumpToEntry() {
+            const input = document.getElementById('jumpTo');
+            const entryNum = parseInt(input.value);
+            if (entryNum >= 1 && entryNum <= filteredDataset.length) {
+                displayEntry(entryNum - 1);
+                input.value = '';
+            }
+        }
+
+        function toggleCollapsible(element) {
+            element.classList.toggle("active");
+            const content = element.nextElementSibling;
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') previousEntry();
+            else if (event.key === 'ArrowRight') nextEntry();
+        });
+
+        loadDataset();
+    </script>
+</body>
+</html>

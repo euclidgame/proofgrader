@@ -548,28 +548,27 @@
             html += `<div class="field-content problem-content">${escapeHtml(entry.problem)}</div>`;
             html += '</div>';
             
-            // Reference Solution
+            // Reference Solution - Green (show first)
             html += '<button class="collapsible reference-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon reference-icon" style="display: inline-flex; margin-right: 8px;">✓</span>Reference Solution</span><span></span></button>';
             html += '<div class="collapsible-content">';
             html += '<div class="field" style="margin-top: 12px;">';
-            html += `<div class="field-content reference-content">${escapeHtml(entry.reference_solution)}</div>`;
+            html += `<div class="field-content reference-content">${renderMarkdown(entry.reference_solution)}</div>`;
             html += '</div></div>';
             
-            // Marking Scheme
+            // Marking Scheme - Orange (show second, with markdown rendering)
             html += '<button class="collapsible marking-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon marking-icon" style="display: inline-flex; margin-right: 8px;">★</span>Marking Scheme</span><span></span></button>';
             html += '<div class="collapsible-content">';
             html += '<div class="field" style="margin-top: 12px;">';
-            html += `<div class="field-content marking-content">${escapeHtml(entry.marking_scheme)}</div>`;
+            html += `<div class="field-content marking-content">${renderMarkdown(entry.marking_scheme)}</div>`;
             html += '</div></div>';
             
-
-            // Model Solution
+            // Model Solution - Purple (show last)
             html += '<button class="collapsible solution-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon solution-icon" style="display: inline-flex; margin-right: 8px;">AI</span>Model-Generated Solution</span><span></span></button>';
             html += '<div class="collapsible-content">';
             html += '<div class="field" style="margin-top: 12px;">';
             html += `<div class="field-content solution-content">${escapeHtml(entry.model_solution)}</div>`;
             html += '</div></div>';
-
+            
             html += '</div>';
             
             document.getElementById('entryContainer').innerHTML = html;
@@ -591,6 +590,33 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return '';
+            
+            // First escape HTML to prevent injection
+            let html = escapeHtml(text);
+            
+            // Convert markdown headers (### Header)
+            html = html.replace(/^### (.+)$/gm, '<strong style="display: block; font-size: 1.1em; margin-top: 15px; margin-bottom: 8px; color: #333;">$1</strong>');
+            html = html.replace(/^## (.+)$/gm, '<strong style="display: block; font-size: 1.15em; margin-top: 18px; margin-bottom: 10px; color: #222;">$1</strong>');
+            
+            // Convert **bold** text (but not in LaTeX)
+            html = html.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Convert *italic* text
+            html = html.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+            
+            // Convert bullet points
+            html = html.replace(/^\*   /gm, '&nbsp;&nbsp;&nbsp;• ');
+            html = html.replace(/^- /gm, '• ');
+            
+            // Convert numbered lists with brackets like [1 pt] or (1 pt)
+            html = html.replace(/\[(\d+\s*pts?)\]/gi, '<span style="color: #4285f4; font-weight: 600;">[$1]</span>');
+            html = html.replace(/\((\d+\s*pts?)\)/gi, '<span style="color: #4285f4; font-weight: 600;">($1)</span>');
+            
+            return html;
         }
 
         function previousEntry() {

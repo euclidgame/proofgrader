@@ -31,7 +31,7 @@
 
         /* Header */
         header {
-            padding: 80px 0 60px;
+            padding: 50px 0 40px;
             text-align: center;
             background: #fff;
         }
@@ -102,7 +102,7 @@
 
         /* Sections */
         section {
-            padding: 80px 0;
+            padding: 50px 0;
             border-bottom: 1px solid #e8e8e8;
         }
 
@@ -111,13 +111,13 @@
             font-size: 2.2em;
             font-weight: 700;
             color: #222;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             text-align: center;
         }
 
         h3 {
             font-size: 1.4em;
-            margin: 40px 0 20px;
+            margin: 30px 0 15px;
             color: #333;
             font-weight: 700;
         }
@@ -132,10 +132,10 @@
         /* Abstract */
         .abstract {
             background: #f9f9f9;
-            padding: 40px 50px;
-            margin: 30px 0;
-            font-size: 1.05em;
-            line-height: 1.75;
+            padding: 30px 40px;
+            margin: 20px 0;
+            font-size: 1.02em;
+            line-height: 1.7;
             color: #444;
             text-align: justify;
         }
@@ -149,13 +149,13 @@
         .results-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 30px;
-            margin: 50px 0;
+            gap: 25px;
+            margin: 35px 0;
         }
 
         .result-card {
             text-align: center;
-            padding: 40px 20px;
+            padding: 30px 20px;
             background: #fafafa;
             border-radius: 4px;
             transition: transform 0.2s;
@@ -183,13 +183,13 @@
         .visual-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 40px;
-            margin: 60px 0;
+            gap: 25px;
+            margin: 35px 0;
         }
 
         .visual-item {
             background: #fafafa;
-            padding: 30px;
+            padding: 25px;
             border-radius: 4px;
         }
 
@@ -226,13 +226,13 @@
         .stats-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-            margin: 50px 0;
+            gap: 25px;
+            margin: 35px 0;
         }
 
         .stat-box {
             background: #fafafa;
-            padding: 30px;
+            padding: 25px;
             border-radius: 4px;
             border-top: 3px solid #4285f4;
         }
@@ -255,12 +255,12 @@
         .contributions {
             list-style: none;
             padding: 0;
-            margin: 40px 0;
+            margin: 30px 0;
         }
 
         .contributions li {
-            padding: 25px 30px;
-            margin: 20px 0;
+            padding: 20px 25px;
+            margin: 15px 0;
             background: #fafafa;
             border-radius: 4px;
             border-left: 3px solid #4285f4;
@@ -277,12 +277,12 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
-            margin: 40px 0;
+            margin: 30px 0;
         }
 
         .dataset-stat {
             background: #fafafa;
-            padding: 30px 20px;
+            padding: 25px 20px;
             text-align: center;
             border-radius: 4px;
         }
@@ -319,8 +319,8 @@
         /* Highlight box */
         .highlight {
             background: #fffbf0;
-            padding: 30px;
-            margin: 40px 0;
+            padding: 25px;
+            margin: 30px 0;
             border-left: 3px solid #ffa500;
             border-radius: 4px;
         }
@@ -337,7 +337,7 @@
         /* Footer */
         footer {
             background: #fafafa;
-            padding: 60px 0;
+            padding: 45px 0;
             text-align: center;
             border-top: 1px solid #e8e8e8;
         }
@@ -722,48 +722,6 @@
         </div>
     </section>
 
-    <section id="methodology">
-        <div class="container">
-            <h2>Methodology</h2>
-            
-            <p style="font-size: 1.15em; max-width: 850px; margin: 0 auto 40px; text-align: center; color: #444;">
-                Rather than training new models, we systematically explore the design space of evaluators to find the best configuration. Our approach is entirely <strong>training-free</strong>, making it practical and reproducible.
-            </p>
-
-            <p style="max-width: 900px; margin: 0 auto 30px;">
-                We conduct controlled experiments across four key design axes, testing different combinations to understand what makes an evaluator reliable. Here's a summary of our findings:
-            </p>
-            
-            <ul class="contributions">
-                <li>
-                    <strong>1. Backbone Model:</strong> We tested six different LLMs as evaluator backbones, ranging from GPT-4o to o3. Our experiments reveal that the choice of backbone is the <em>single most important factor</em>—stronger reasoning models consistently produce better evaluations across all metrics. OpenAI o3 emerged as the best performer.
-                </li>
-                <li>
-                    <strong>2. Context Design:</strong> We compared four context configurations: providing both reference solutions and marking schemes, providing only one or the other, or providing neither. The marking scheme proves crucial—it provides the majority of the performance gain and helps the evaluator understand what constitutes progress in a proof, preventing it from over-crediting fluent but incorrect reasoning.
-                </li>
-                <li>
-                    <strong>3. Instruction Style:</strong> We tested three instruction strategies for how evaluators should use the provided context. Interestingly, the optimal instruction style depends on the backbone's capabilities: stronger models (like o3) benefit from flexible instructions that allow them to recognize valid alternative approaches, while mid-tier models require more prescriptive guidance to avoid over-crediting.
-                </li>
-                <li>
-                    <strong>4. Workflow Design:</strong> Beyond single-pass evaluation, we explored ensembling (running the evaluator multiple times and aggregating scores) and multi-stage pipelines (decomposing evaluation into sequential steps). We found that simple ensembling—taking the median of five independent runs—consistently improves accuracy while reducing variance.
-                </li>
-            </ul>
-
-            <p style="margin-top: 30px;"><strong>Key Takeaway:</strong> Our analysis shows that design factors have dramatically different impact magnitudes: <em>backbone model</em> ≫ <em>context</em> ≫ <em>instruction style</em>. Based on this, we recommend: (1) use the strongest available reasoning model, (2) always include a problem-specific marking scheme, and (3) match instruction rigidity to the model's capability level.</p>
-
-            <h3 style="margin-top: 50px;">ProofGrader: Our Best Evaluator</h3>
-            <p>Combining insights from our systematic study, <strong>ProofGrader</strong> uses OpenAI o3 as the backbone, provides both reference solutions and marking schemes as context, employs flexible instructions that allow for alternative solution paths, and ensembles five independent evaluation runs using median aggregation.</p>
-            
-            <div class="highlight" style="margin-top: 25px;">
-                <p><strong>Performance:</strong> ProofGrader achieves an MAE of 0.926 against expert scores, with 76.5% of predictions within ±1 point and nearly zero bias (0.008). This significantly outperforms naive baselines and demonstrates strong alignment with human judgment.</p>
-            </div>
-
-            <p style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 4px; font-style: italic; color: #666;">
-                → For detailed ablation studies, statistical significance tests, and analysis of per-generator performance, see <strong>Section 3</strong> of the paper.
-            </p>
-        </div>
-    </section>
-
     <section id="dataset">
         <div class="container">
             <h2>ProofBench Dataset</h2>
@@ -823,6 +781,48 @@
 
             <p style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 4px; font-style: italic; color: #666; text-align: center;">
                 → For complete dataset statistics, model performance breakdowns by competition, and details on the annotation pipeline, see <strong>Section 2</strong> of the paper.
+            </p>
+        </div>
+    </section>
+
+    <section id="methodology">
+        <div class="container">
+            <h2>Methodology</h2>
+            
+            <p style="font-size: 1.15em; max-width: 850px; margin: 0 auto 40px; text-align: center; color: #444;">
+                Rather than training new models, we systematically explore the design space of evaluators to find the best configuration. Our approach is entirely <strong>training-free</strong>, making it practical and reproducible.
+            </p>
+
+            <p style="max-width: 900px; margin: 0 auto 30px;">
+                We conduct controlled experiments across four key design axes, testing different combinations to understand what makes an evaluator reliable. Here's a summary of our findings:
+            </p>
+            
+            <ul class="contributions">
+                <li>
+                    <strong>1. Backbone Model:</strong> We tested six different LLMs as evaluator backbones, ranging from GPT-4o to o3. Our experiments reveal that the choice of backbone is the <em>single most important factor</em>—stronger reasoning models consistently produce better evaluations across all metrics. OpenAI o3 emerged as the best performer.
+                </li>
+                <li>
+                    <strong>2. Context Design:</strong> We compared four context configurations: providing both reference solutions and marking schemes, providing only one or the other, or providing neither. The marking scheme proves crucial—it provides the majority of the performance gain and helps the evaluator understand what constitutes progress in a proof, preventing it from over-crediting fluent but incorrect reasoning.
+                </li>
+                <li>
+                    <strong>3. Instruction Style:</strong> We tested three instruction strategies for how evaluators should use the provided context. Interestingly, the optimal instruction style depends on the backbone's capabilities: stronger models (like o3) benefit from flexible instructions that allow them to recognize valid alternative approaches, while mid-tier models require more prescriptive guidance to avoid over-crediting.
+                </li>
+                <li>
+                    <strong>4. Workflow Design:</strong> Beyond single-pass evaluation, we explored ensembling (running the evaluator multiple times and aggregating scores) and multi-stage pipelines (decomposing evaluation into sequential steps). We found that simple ensembling—taking the median of five independent runs—consistently improves accuracy while reducing variance.
+                </li>
+            </ul>
+
+            <p style="margin-top: 30px;"><strong>Key Takeaway:</strong> Our analysis shows that design factors have dramatically different impact magnitudes: <em>backbone model</em> ≫ <em>context</em> ≫ <em>instruction style</em>. Based on this, we recommend: (1) use the strongest available reasoning model, (2) always include a problem-specific marking scheme, and (3) match instruction rigidity to the model's capability level.</p>
+
+            <h3 style="margin-top: 50px;">ProofGrader: Our Best Evaluator</h3>
+            <p>Combining insights from our systematic study, <strong>ProofGrader</strong> uses OpenAI o3 as the backbone, provides both reference solutions and marking schemes as context, employs flexible instructions that allow for alternative solution paths, and ensembles five independent evaluation runs using median aggregation.</p>
+            
+            <div class="highlight" style="margin-top: 25px;">
+                <p><strong>Performance:</strong> ProofGrader achieves an MAE of 0.926 against expert scores, with 76.5% of predictions within ±1 point and nearly zero bias (0.008). This significantly outperforms naive baselines and demonstrates strong alignment with human judgment.</p>
+            </div>
+
+            <p style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 4px; font-style: italic; color: #666;">
+                → For detailed ablation studies, statistical significance tests, and analysis of per-generator performance, see <strong>Section 3</strong> of the paper.
             </p>
         </div>
     </section>

@@ -571,11 +571,11 @@
             html += `<div class="field-content marking-content">${renderMarkdown(entry.marking_scheme)}</div>`;
             html += '</div></div>';
             
-            // Model Solution - Purple (show last)
+            // Model Solution - Purple (show last, with markdown rendering)
             html += '<button class="collapsible solution-btn" onclick="toggleCollapsible(this)"><span><span class="field-icon solution-icon" style="display: inline-flex; margin-right: 8px;">AI</span>Model-Generated Solution</span><span></span></button>';
             html += '<div class="collapsible-content">';
             html += '<div class="field" style="margin-top: 12px;">';
-            html += `<div class="field-content solution-content">${escapeHtml(entry.model_solution)}</div>`;
+            html += `<div class="field-content solution-content">${renderMarkdown(entry.model_solution)}</div>`;
             html += '</div></div>';
             
             html += '</div>';

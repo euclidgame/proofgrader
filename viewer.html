@@ -604,6 +604,9 @@
         function renderMarkdown(text) {
             if (!text) return '';
             
+            // Remove LaTeX figure environments before processing
+            text = text.replace(/\\begin\{figure\}[\s\S]*?\\end\{figure\}/g, '');
+            
             // First escape HTML to prevent injection
             let html = escapeHtml(text);
             

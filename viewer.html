@@ -607,26 +607,63 @@
             // Remove LaTeX figure environments before processing
             text = text.replace(/\\begin\{figure\}[\s\S]*?\\end\{figure\}/g, '');
             
-            // Convert LaTeX theorem-like environments to bold labels
-            // Keep content, add bold label at start
-            const environments = ['lemma', 'proof', 'claim', 'theorem', 'proposition', 'corollary', 'definition', 'remark', 'example'];
-            environments.forEach(env => {
-                const envName = env.charAt(0).toUpperCase() + env.slice(1); // Capitalize
-                // Match \begin{env}content\end{env} and replace with **Env.** content
-                const regex = new RegExp(`\\\\begin\\{${env}\\}\\s*`, 'gi');
-                text = text.replace(regex, `**${envName}.** `);
-                const endRegex = new RegExp(`\\s*\\\\end\\{${env}\\}`, 'gi');
-                text = text.replace(endRegex, '');
+            // Convert LaTeX theorem-like environments with numbering
+            // Keep counters for each environment type
+            const counters = {};
+            const numberedEnvs = ['lemma', 'claim', 'theorem', 'proposition', 'corollary'];
+            const unnumberedEnvs = ['proof', 'definition', 'remark', 'example'];
+            
+            // Process numbered environments (lemma, claim, theorem, etc.)
+            numberedEnvs.forEach(env => {
+                counters[env] = 0;
+                const envName = env.charAt(0).toUpperCase() + env.slice(1);
+                
+                // Handle both \begin{env} and \begin{env*} - case-sensitive
+                const regexNormal = new RegExp(`\\\\begin\\{${env}\\}`, 'g');
+                const regexStar = new RegExp(`\\\\begin\\{${env}\\*\\}`, 'g');
+                
+                text = text.replace(regexNormal, () => {
+                    counters[env]++;
+                    return `**${envName} ${counters[env]}.** `;
+                });
+                
+                text = text.replace(regexStar, () => {
+                    counters[env]++;
+                    return `**${envName} ${counters[env]}.** `;
+                });
+                
+                // Remove end tags
+                const endRegexNormal = new RegExp(`\\\\end\\{${env}\\}`, 'g');
+                const endRegexStar = new RegExp(`\\\\end\\{${env}\\*\\}`, 'g');
+                text = text.replace(endRegexNormal, '');
+                text = text.replace(endRegexStar, '');
             });
             
-            // Also handle environments with asterisk (proof*, lemma*, etc.)
-            environments.forEach(env => {
+            // Process unnumbered environments (proof, remark, etc.)
+            unnumberedEnvs.forEach(env => {
                 const envName = env.charAt(0).toUpperCase() + env.slice(1);
-                const regex = new RegExp(`\\\\begin\\{${env}\\*\\}\\s*`, 'gi');
-                text = text.replace(regex, `**${envName}.** `);
-                const endRegex = new RegExp(`\\s*\\\\end\\{${env}\\*\\}`, 'gi');
-                text = text.replace(endRegex, '');
+                
+                const regexNormal = new RegExp(`\\\\begin\\{${env}\\}`, 'g');
+                const regexStar = new RegExp(`\\\\begin\\{${env}\\*\\}`, 'g');
+                
+                text = text.replace(regexNormal, `**${envName}.** `);
+                text = text.replace(regexStar, `**${envName}.** `);
+                
+                const endRegexNormal = new RegExp(`\\\\end\\{${env}\\}`, 'g');
+                const endRegexStar = new RegExp(`\\\\end\\{${env}\\*\\}`, 'g');
+                text = text.replace(endRegexNormal, '');
+                text = text.replace(endRegexStar, '');
             });
+            
+            // Handle LaTeX text formatting commands before escaping
+            text = text.replace(/\\textbf\{([^}]+)\}/g, '**$1**');
+            text = text.replace(/\\emph\{([^}]+)\}/g, '*$1*');
+            text = text.replace(/\\textit\{([^}]+)\}/g, '*$1*');
+            
+            // Remove other LaTeX commands that don't render well
+            text = text.replace(/\\noindent\s*/g, '');
+            text = text.replace(/\\qquad/g, '    ');
+            text = text.replace(/\\quad/g, '  ');
             
             // First escape HTML to prevent injection
             let html = escapeHtml(text);

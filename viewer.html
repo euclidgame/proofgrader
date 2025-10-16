@@ -13,7 +13,11 @@
                 inlineMath: [['\\(', '\\)'], ['$', '$']],
                 displayMath: [['\\[', '\\]'], ['$$', '$$']],
                 processEscapes: true,
-                processEnvironments: true
+                processEnvironments: true,
+                tags: 'ams',  // Enable automatic equation numbering
+                tagSide: 'right',  // Display numbers on the right
+                tagIndent: '0.8em',  // Indentation for equation numbers
+                packages: {'[+]': ['ams', 'noerrors']}  // Load AMS extensions
             },
             options: {
                 skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']

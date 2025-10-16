@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equation Numbering Test</title>
+    
+    <!-- MathJax with Equation Numbering -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)'], ['$', '$']],
+                displayMath: [['\\[', '\\]'], ['$$', '$$']],
+                processEscapes: true,
+                processEnvironments: true,
+                tags: 'ams',  // Enable automatic equation numbering
+                tagSide: 'right',  // Display numbers on the right
+                tagIndent: '0.8em',  // Indentation for equation numbers
+                packages: {'[+]': ['ams', 'noerrors']}  // Load AMS extensions
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    
+    <style>
+        body {
+            font-family: 'Georgia', serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.8;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .example {
+            background: #f8f9fa;
+            border-left: 4px solid #4285f4;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Equation Numbering Test Page</h1>
+    
+    <p>This page demonstrates automatic equation numbering and cross-references using MathJax.</p>
+    
+    <hr>
+    
+    <h2>Example 1: Basic Numbered Equation</h2>
+    
+    <div class="example">
+        <p>Consider the quadratic equation:</p>
+        \[ 
+        f(x) = ax^2 + bx + c \label{eq:quadratic}
+        \]
+        <p>Equation \eqref{eq:quadratic} represents a parabola.</p>
+    </div>
+    
+    <div class="success">
+        ✓ Expected: Equation displays with number (1) on the right, and the reference shows "(1)"
+    </div>
+    
+    <hr>
+    
+    <h2>Example 2: Multiple Equations</h2>
+    
+    <div class="example">
+        <p>The Pythagorean theorem:</p>
+        \[ 
+        a^2 + b^2 = c^2 \label{eq:pythagoras}
+        \]
+        
+        <p>Einstein's mass-energy equivalence:</p>
+        \[ 
+        E = mc^2 \label{eq:einstein}
+        \]
+        
+        <p>From equations \eqref{eq:pythagoras} and \eqref{eq:einstein}, we can derive...</p>
+    </div>
+    
+    <div class="success">
+        ✓ Expected: First equation numbered (2), second numbered (3), references show "(2)" and "(3)"
+    </div>
+    
+    <hr>
+    
+    <h2>Example 3: Aligned Equations</h2>
+    
+    <div class="example">
+        <p>System of equations:</p>
+        \begin{align}
+        x + y &= 10 \label{eq:sum} \\
+        x - y &= 2 \label{eq:diff}
+        \end{align}
+        
+        <p>Adding equations \eqref{eq:sum} and \eqref{eq:diff} gives \(2x = 12\), so \(x = 6\).</p>
+    </div>
+    
+    <div class="success">
+        ✓ Expected: Each line numbered (4) and (5), references show "(4)" and "(5)"
+    </div>
+    
+    <hr>
+    
+    <h2>Example 4: Unnumbered Equation</h2>
+    
+    <div class="example">
+        <p>This equation should not be numbered:</p>
+        \[ 
+        \sin^2(x) + \cos^2(x) = 1 \notag
+        \]
+        <p>(Uses <code>\notag</code> to suppress numbering)</p>
+    </div>
+    
+    <div class="success">
+        ✓ Expected: No number appears
+    </div>
+    
+    <hr>
+    
+    <h2>Example 5: From Real Dataset (PUTNAM-2022-B6)</h2>
+    
+    <div class="example">
+        <p>Find all continuous functions \(f: \mathbb{R}^+ \to \mathbb{R}^+\) such that</p>
+        \[
+        f(xf(y)) + f(yf(x)) = 1 + f(x+y) \label{eq:functional}
+        \]
+        <p>for all \(x,y > 0\).</p>
+        
+        <p>By equation \eqref{eq:functional}, setting \(x = y\) gives:</p>
+        \[
+        2f(xf(x)) = 1 + f(2x) \label{eq:special-case}
+        \]
+        
+        <p>Equations \eqref{eq:functional} and \eqref{eq:special-case} form the basis of our proof.</p>
+    </div>
+    
+    <div class="success">
+        ✓ Expected: Equations numbered (6) and (7), references show "(6)" and "(7)"
+    </div>
+    
+    <hr>
+    
+    <h2>Example 6: Inline vs Display Math</h2>
+    
+    <div class="example">
+        <p>Inline math is not numbered: \(a^2 + b^2 = c^2\)</p>
+        
+        <p>But display math is numbered:</p>
+        \[
+        a^2 + b^2 = c^2 \label{eq:pythagoras2}
+        \]
+        
+        <p>Reference to \eqref{eq:pythagoras2} works!</p>
+    </div>
+    
+    <div class="success">
+        ✓ Expected: Inline equation has no number, display equation is numbered (8), reference shows "(8)"
+    </div>
+    
+    <hr>
+    
+    <h2>Summary</h2>
+    
+    <p><strong>Configuration enabled:</strong></p>
+    <ul>
+        <li>Automatic equation numbering (AMS style)</li>
+        <li>Numbers displayed on the right side</li>
+        <li>Labels with <code>\label{}</code></li>
+        <li>References with <code>\eqref{}</code></li>
+        <li>Suppression with <code>\notag</code></li>
+    </ul>
+    
+    <p><strong>How to use in your viewer:</strong></p>
+    <ol>
+        <li>Start the server: <code>./start_viewer.sh</code></li>
+        <li>Open: <code>http://localhost:8000/proofgrader/viewer.html</code></li>
+        <li>Navigate to any problem with equation labels</li>
+        <li>Equations will be numbered automatically!</li>
+    </ol>
+    
+    <hr>
+    
+    <p style="text-align: center; color: #666; font-size: 0.9em;">
+        Test page created: October 16, 2025<br>
+        MathJax version: 3.x with AMS extensions
+    </p>
+</body>
+</html>
+

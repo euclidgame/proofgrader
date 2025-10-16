@@ -607,15 +607,19 @@
             // First escape HTML to prevent injection
             let html = escapeHtml(text);
             
-            // Convert markdown headers (### Header)
+            // Convert horizontal rules (---, ----, etc.)
+            html = html.replace(/^-{3,}$/gm, '<hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">');
+            
+            // Convert markdown headers (### Header or #### Header)
+            html = html.replace(/^#### (.+)$/gm, '<strong style="display: block; font-size: 1.05em; margin-top: 12px; margin-bottom: 6px; color: #444;">$1</strong>');
             html = html.replace(/^### (.+)$/gm, '<strong style="display: block; font-size: 1.1em; margin-top: 15px; margin-bottom: 8px; color: #333;">$1</strong>');
             html = html.replace(/^## (.+)$/gm, '<strong style="display: block; font-size: 1.15em; margin-top: 18px; margin-bottom: 10px; color: #222;">$1</strong>');
             
-            // Convert **bold** text (but not in LaTeX)
+            // Convert **bold** text
             html = html.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
             
-            // Convert *italic* text
-            html = html.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+            // Convert *italic* text (but not if it's part of a bullet like "*   ")
+            html = html.replace(/(?<!^\*)\*([^*\s][^*\n]*?)\*/g, '<em>$1</em>');
             
             // Convert bullet points
             html = html.replace(/^\*   /gm, '&nbsp;&nbsp;&nbsp;• ');
@@ -624,6 +628,9 @@
             // Convert numbered lists with brackets like [1 pt] or (1 pt)
             html = html.replace(/\[(\d+\s*pts?)\]/gi, '<span style="color: #4285f4; font-weight: 600;">[$1]</span>');
             html = html.replace(/\((\d+\s*pts?)\)/gi, '<span style="color: #4285f4; font-weight: 600;">($1)</span>');
+            
+            // Handle backticks for inline code
+            html = html.replace(/`([^`]+)`/g, '<code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 0.9em;">$1</code>');
             
             return html;
         }

@@ -607,6 +607,27 @@
             // Remove LaTeX figure environments before processing
             text = text.replace(/\\begin\{figure\}[\s\S]*?\\end\{figure\}/g, '');
             
+            // Convert LaTeX theorem-like environments to bold labels
+            // Keep content, add bold label at start
+            const environments = ['lemma', 'proof', 'claim', 'theorem', 'proposition', 'corollary', 'definition', 'remark', 'example'];
+            environments.forEach(env => {
+                const envName = env.charAt(0).toUpperCase() + env.slice(1); // Capitalize
+                // Match \begin{env}content\end{env} and replace with **Env.** content
+                const regex = new RegExp(`\\\\begin\\{${env}\\}\\s*`, 'gi');
+                text = text.replace(regex, `**${envName}.** `);
+                const endRegex = new RegExp(`\\s*\\\\end\\{${env}\\}`, 'gi');
+                text = text.replace(endRegex, '');
+            });
+            
+            // Also handle environments with asterisk (proof*, lemma*, etc.)
+            environments.forEach(env => {
+                const envName = env.charAt(0).toUpperCase() + env.slice(1);
+                const regex = new RegExp(`\\\\begin\\{${env}\\*\\}\\s*`, 'gi');
+                text = text.replace(regex, `**${envName}.** `);
+                const endRegex = new RegExp(`\\s*\\\\end\\{${env}\\*\\}`, 'gi');
+                text = text.replace(endRegex, '');
+            });
+            
             // First escape HTML to prevent injection
             let html = escapeHtml(text);
             

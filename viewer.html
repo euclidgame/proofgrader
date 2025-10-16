@@ -457,6 +457,15 @@
                 const text = await response.text();
                 const lines = text.trim().split('\n');
                 dataset = lines.map(line => JSON.parse(line));
+                
+                // Sort by problem_id, then by generator for consistent ordering
+                dataset.sort((a, b) => {
+                    if (a.problem_id !== b.problem_id) {
+                        return a.problem_id.localeCompare(b.problem_id);
+                    }
+                    return a.generator.localeCompare(b.generator);
+                });
+                
                 filteredDataset = [...dataset];
                 
                 populateFilters();

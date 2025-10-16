@@ -465,7 +465,7 @@
             </p>
 
             <h3>Impact of Design Choices</h3>
-            <p>The left chart shows how different context configurations affect evaluator performance. ProofGrader (with both marking scheme and reference solutions) achieves the lowest MAE of 0.926, while providing no context results in poor performance (MAE of 1.68). The right chart demonstrates ProofGrader's practical value: as we increase the number of candidate solutions from 1 to 16, ProofGrader consistently selects high-quality proofs, closely tracking the human oracle and far outperforming binary and baseline methods.</p>
+            <p>The left chart shows how different context configurations affect evaluator performance. Using both marking scheme (MS) and reference solutions (Ref) achieves the lowest MAE of 0.964, while providing no context results in poor performance (MAE of 1.680). The right chart demonstrates ProofGrader's practical value: as we increase the number of candidate solutions from 1 to 16, ProofGrader consistently selects high-quality proofs, closely tracking the human oracle and far outperforming binary and baseline methods.</p>
             
             <div class="visual-grid">
                 <!-- Chart 1: Evaluator Performance -->
@@ -481,20 +481,20 @@
                             <line x1="30" y1="20" x2="30" y2="240" stroke="#999" stroke-width="1.5"/>
                             <line x1="30" y1="240" x2="310" y2="240" stroke="#999" stroke-width="1.5"/>
                             
-                            <text x="65" y="260" text-anchor="middle" font-size="11" fill="#333" font-weight="600">ProofGrader</text>
-                            <text x="135" y="260" text-anchor="middle" font-size="10" fill="#666">+MS</text>
-                            <text x="205" y="260" text-anchor="middle" font-size="10" fill="#666">+Ref</text>
+                            <text x="65" y="260" text-anchor="middle" font-size="10" fill="#333" font-weight="600">MS+Ref</text>
+                            <text x="135" y="260" text-anchor="middle" font-size="10" fill="#666">MS only</text>
+                            <text x="205" y="260" text-anchor="middle" font-size="10" fill="#666">Ref only</text>
                             <text x="275" y="260" text-anchor="middle" font-size="10" fill="#666">None</text>
                             
-                            <text x="65" y="130" text-anchor="middle" font-size="14" fill="#fff" font-weight="700">0.93</text>
-                            <text x="135" y="80" text-anchor="middle" font-size="13" fill="#333" font-weight="600">1.07</text>
-                            <text x="205" y="50" text-anchor="middle" font-size="13" fill="#333" font-weight="600">1.33</text>
-                            <text x="275" y="20" text-anchor="middle" font-size="13" fill="#333" font-weight="600">1.68</text>
+                            <text x="65" y="130" text-anchor="middle" font-size="14" fill="#222" font-weight="700">0.964</text>
+                            <text x="135" y="80" text-anchor="middle" font-size="13" fill="#333" font-weight="600">1.069</text>
+                            <text x="205" y="50" text-anchor="middle" font-size="13" fill="#333" font-weight="600">1.330</text>
+                            <text x="275" y="20" text-anchor="middle" font-size="13" fill="#333" font-weight="600">1.680</text>
                             
                             <text x="15" y="15" font-size="10" fill="#999">MAE</text>
                         </svg>
                     </div>
-                    <p class="visual-caption"><strong>0.926 MAE</strong> — Adding context dramatically improves performance</p>
+                    <p class="visual-caption"><strong>Lower MAE is better.</strong> Each bar represents a different context configuration: <strong>MS+Ref</strong> (marking scheme + reference solutions, MAE=0.964) performs best; <strong>MS only</strong> (marking scheme only, MAE=1.069) is second; <strong>Ref only</strong> (reference only, MAE=1.330) is third; <strong>None</strong> (no context, MAE=1.680) performs worst. Adding context dramatically improves evaluator quality.</p>
                 </div>
 
                 <!-- Chart 2: Best-of-N -->
@@ -713,7 +713,6 @@
                 <li>Provides <strong>faithful assessments</strong> of model capabilities for benchmarking progress</li>
                 <li>Enables <strong>accurate reward signals</strong> for training proof generators via reinforcement learning</li>
                 <li>Supports <strong>downstream applications</strong> like best-of-n selection and rejection sampling for data generation</li>
-                <li>Bridges the gap between <strong>formal verification and natural language</strong> reasoning</li>
             </ul>
 
             <p style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 4px; font-style: italic; color: #666;">

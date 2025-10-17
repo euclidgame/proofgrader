@@ -61,6 +61,17 @@
             color: #333;
         }
 
+        .authors a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-bottom 0.2s;
+        }
+
+        .authors a:hover {
+            border-bottom: 1px solid #4285f4;
+        }
+
         .affiliations {
             font-size: 0.95em;
             color: #777;
@@ -399,15 +410,15 @@
         <div class="container">
             <h1>Reliable Fine-Grained Evaluation of Natural Language Math Proofs</h1>
             <div class="authors">
-                <strong>Wenjie Ma</strong><sup>1</sup>, 
+                <a href="https://wenjiema.com" target="_blank"><strong>Wenjie Ma</strong></a><sup>1</sup>, 
                 Andrei Cojocaru<sup>1</sup>, 
                 Neel Kolhe<sup>1</sup>, 
                 Bradley Louie<sup>1</sup>, 
                 Robin Said Sharif<sup>1</sup>,
                 Haihan Zhang<sup>3</sup>, 
                 Vincent Zhuang<sup>2</sup>, 
-                Matei Zaharia<sup>1</sup>, 
-                <strong>Sewon Min</strong><sup>1,4</sup>
+                <a href="https://people.eecs.berkeley.edu/~matei/" target="_blank">Matei Zaharia</a><sup>1</sup>, 
+                <a href="https://sewonmin.com" target="_blank"><strong>Sewon Min</strong></a><sup>1,4</sup>
             </div>
             <div class="affiliations">
                 <sup>1</sup>UC Berkeley &nbsp;·&nbsp; 
@@ -416,7 +427,7 @@
                 <sup>4</sup>Allen Institute for AI
             </div>
             <div class="header-links">
-                <a href="paper.pdf" class="btn">Paper</a>
+                <a href="https://arxiv.org/pdf/2510.13888" class="btn" target="_blank">Paper</a>
                 <a href="https://huggingface.co/datasets/wenjiema02/ProofBench" class="btn">Dataset</a>
                 <a href="viewer.html" class="btn">Viewer</a>
                 <a href="#" class="btn btn-secondary" style="opacity: 0.5; cursor: default; pointer-events: none;">Code (Coming Soon)</a>
@@ -856,11 +867,27 @@
         </div>
     </section>
 
+    <section id="citation" style="background: #fafafa; border-top: 1px solid #e8e8e8;">
+        <div class="container">
+            <h2>Citation</h2>
+            <p style="text-align: center; margin-bottom: 25px; color: #666;">If you use ProofBench or ProofGrader in your research, please cite our paper:</p>
+            <pre style="background: #fff; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0; overflow-x: auto; text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; line-height: 1.5; color: #333;">@misc{ma2025reliablefinegrainedevaluationnatural,
+      title={Reliable Fine-Grained Evaluation of Natural Language Math Proofs}, 
+      author={Wenjie Ma and Andrei Cojocaru and Neel Kolhe and Bradley Louie and Robin Said Sharif and Haihan Zhang and Vincent Zhuang and Matei Zaharia and Sewon Min},
+      year={2025},
+      eprint={2510.13888},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2510.13888}, 
+}</pre>
+        </div>
+    </section>
+
     <footer>
         <div class="container">
             <p style="font-size: 1.1em; font-weight: 600; color: #444; margin-bottom: 15px;">Reliable Fine-Grained Evaluation of Natural Language Math Proofs</p>
             <p style="margin-top: 25px;">
-                <a href="paper.pdf">Paper</a> · 
+                <a href="https://arxiv.org/pdf/2510.13888" target="_blank">Paper</a> · 
                 <a href="https://huggingface.co/datasets/wenjiema02/ProofBench">Dataset</a> · 
                 <a href="viewer.html">Viewer</a> · 
                 <a href="mailto:windsey@berkeley.edu">Contact</a>

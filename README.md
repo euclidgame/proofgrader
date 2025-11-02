@@ -17,12 +17,24 @@ ProofGrader provides **two independent scripts**:
 ### Installation
 
 ```bash
-# 1. Clone and install
-git clone <repository-url>
-cd ProofGrader
+# 1. Install Git LFS (required for large data files)
+# On Ubuntu/Debian:
+sudo apt-get install git-lfs
+
+# On macOS:
+brew install git-lfs
+
+# On Windows (use Git Bash or WSL)
+# Download from: https://git-lfs.github.com/
+
+# 2. Clone and install
+git clone https://github.com/euclidgame/proofgrader.git
+cd proofgrader
+git lfs install
+git lfs pull  # Download large files (problems.jsonl, etc.)
 pip install -r requirements.txt
 
-# 2. Set up API keys
+# 3. Set up API keys
 export OPENAI_API_KEY="your-key"
 export GOOGLE_API_KEY="your-key"
 export ANTHROPIC_API_KEY="your-key"

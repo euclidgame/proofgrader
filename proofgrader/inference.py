@@ -10,7 +10,6 @@ import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set
 from tqdm import tqdm
-import threading
 
 from .config import config
 from .dataset_handler import DatasetHandler
@@ -30,65 +29,7 @@ logging.getLogger('openai._base_client').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 
-class BatchResultSaver:
-    """Thread-safe batch result saver that saves results periodically."""
-    
-    def __init__(self, output_path: str, batch_size: int = 10, save_interval: int = 30):
-        self.output_path = output_path
-        self.batch_size = batch_size
-        self.save_interval = save_interval
-        
-        self.results_buffer = []
-        self.lock = threading.Lock()
-        self.last_save_time = time.time()
-        self.total_saved = 0
-        
-    def add_result(self, result: Dict[str, Any]):
-        """Add a result to the save queue."""
-        with self.lock:
-            self.results_buffer.append(result)
-            
-            # Check if we should save (batch size or time interval)
-            current_time = time.time()
-            should_save = (
-                len(self.results_buffer) >= self.batch_size or
-                current_time - self.last_save_time >= self.save_interval
-            )
-            
-            if should_save:
-                self._save_buffer()
-    
-    def _save_buffer(self):
-        """Save buffered results to file (called with lock held)."""
-        if not self.results_buffer:
-            return
-        
-        try:
-            # Create directory if it doesn't exist
-            output_file = Path(self.output_path)
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(self.output_path, 'a', encoding='utf-8') as f:
-                for result in self.results_buffer:
-                    json_line = json.dumps(result, ensure_ascii=False)
-                    f.write(json_line + '\n')
-                f.flush()
-            
-            self.total_saved += len(self.results_buffer)
-            logger.debug(f"💾 Saved batch of {len(self.results_buffer)} results (total: {self.total_saved})")
-            
-            self.results_buffer.clear()
-            self.last_save_time = time.time()
-            
-        except Exception as e:
-            logger.error(f"Error saving batch: {e}")
-    
-    def flush(self):
-        """Force save any remaining buffered results."""
-        with self.lock:
-            if self.results_buffer:
-                logger.info(f"💾 Flushing final batch of {len(self.results_buffer)} results")
-                self._save_buffer()
+# BatchResultSaver removed - results are written all at once at the end
 
 class ProgressTracker:
     """Thread-safe progress tracker for async operations."""
@@ -176,7 +117,6 @@ class InferenceEngine:
             self.config.dataset_split
         )
         self.prompt_formatter = PromptFormatter(self.config.prompt_template_config)
-        self.result_saver = None
         
     def _inputs_match(self, input_data: Dict[str, Any], cached_data: Dict[str, Any]) -> bool:
         """
@@ -439,10 +379,6 @@ class InferenceEngine:
             # Create result record (preserves input + adds response/generation_info)
             result = self._create_result_record(problem, problem_responses, problem_usages, template)
             results.append(result)
-            
-            # Save incrementally
-            if self.result_saver:
-                self.result_saver.add_result(result.copy())
         
         return results
     
@@ -526,14 +462,8 @@ class InferenceEngine:
             input_data_by_id = {p.get('id'): p for p in problems if p.get('id')}
             
             # Set up caching
+            valid_results = []
             if use_cache:
-                self.result_saver = BatchResultSaver(
-                    output_path=self.config.output_path,
-                    batch_size=10,
-                    save_interval=30
-                )
-                logger.info(f"💾 Initialized batch result saver")
-                
                 print("🗂️  Loading existing results...")
                 valid_results, invalid_ids = self.load_existing_results(
                     self.config.output_path, 
@@ -580,10 +510,17 @@ class InferenceEngine:
             stats = self.api_client.get_stats()
             logger.info(f"API stats: {stats}")
             
-            # Flush remaining results
-            if self.result_saver:
-                self.result_saver.flush()
-                logger.info(f"💾 Total saved: {self.result_saver.total_saved}")
+            # Write all results to file
+            if results:
+                output_file = Path(self.config.output_path)
+                output_file.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(self.config.output_path, 'w', encoding='utf-8') as f:
+                    for result in results:
+                        json_line = json.dumps(result, ensure_ascii=False)
+                        f.write(json_line + '\n')
+                
+                logger.info(f"💾 Saved {len(results)} results to {self.config.output_path}")
             
             print("✅ Inference completed successfully!")
             return True

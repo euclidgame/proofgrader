@@ -1,0 +1,56 @@
+================================================================================
+QUICK REFERENCE: Copy-Paste Ready Content
+================================================================================
+
+📊 BRIEF FIGURE CAPTION
+--------------------------------------------------------------------------------
+Figure 1: Dataset composition and model performance evaluation. (a) Distribution 
+of 142 unique problems across 6 mathematical competitions. (b) Overall score 
+distribution showing mean score of 2.41/7 (red dashed) and median of 1.50/7 
+(green dashed), indicating high task difficulty. (c) Box plots comparing score 
+distributions across three models, with OpenAI-o3 achieving highest median 
+performance. (d) Percentage breakdown of scores by model, revealing OpenAI-o3 
+has the most balanced distribution while DeepSeek-R1-0528 shows highest failure 
+rate. (e) Performance heatmap showing average scores per model-competition pair, 
+highlighting substantial variation across problem sources. (f) Competition 
+difficulty ranking with error bars (±SEM), showing TST as most challenging 
+(mean: 1.22) and PUTNAM as most accessible (mean: 3.11).
+--------------------------------------------------------------------------------
+
+📝 CONCISE ANALYSIS (2 paragraphs for paper)
+--------------------------------------------------------------------------------
+We evaluate three state-of-the-art models—DeepSeek-R1-0528, Gemini-2.5-pro, 
+and OpenAI-o3—on 142 mathematical competition problems spanning six competitions 
+(Figure 1a). The overall performance reveals significant challenges, with a mean 
+score of 2.41/7 and median of 1.50/7 (Figure 1b). OpenAI-o3 achieves the highest 
+performance (mean: 2.84, 26.1% success rate), followed by Gemini-2.5-pro 
+(mean: 2.55, 23.9% success rate) and DeepSeek-R1-0528 (mean: 1.85, 11.3% success 
+rate) (Figure 1c). Notably, 34.5% of all attempts result in zero scores, while 
+only 17.6% achieve scores ≥6, highlighting the substantial difficulty gap.
+
+The score distribution analysis (Figure 1d) reveals distinct model behaviors: 
+DeepSeek-R1-0528 exhibits a bimodal pattern with high concentrations at extremes 
+(40.8% zeros, 10.6% perfect scores), suggesting an "all-or-nothing" approach, 
+while OpenAI-o3 shows more uniform distribution across score ranges, indicating 
+robust partial credit achievement. Performance varies dramatically by competition 
+(Figure 1e,f), with PUTNAM problems being most accessible (mean: 3.11, 32.4% 
+success rate) and TST problems most challenging (mean: 1.22, 5.9% success rate). 
+Even the top-performing model struggles with olympiad-style problems, suggesting 
+fundamental limitations in complex mathematical reasoning that warrant future 
+investigation.
+--------------------------------------------------------------------------------
+
+📈 KEY STATISTICS
+--------------------------------------------------------------------------------
+• Dataset: 142 unique problems, 426 evaluations, 6 competitions
+• Overall: Mean 2.41/7, Median 1.50/7
+• Best Model: OpenAI-o3 (mean: 2.84, success rate: 26.1%)
+• Hardest Competition: TST (mean: 1.22, success rate: 5.9%)
+• Easiest Competition: PUTNAM (mean: 3.11, success rate: 32.4%)
+• High failure rate: 34.5% score 0 across all attempts
+--------------------------------------------------------------------------------
+
+For full analysis including 4-paragraph version and discussion points, 
+see: PAPER_TEXT.md
+
+================================================================================

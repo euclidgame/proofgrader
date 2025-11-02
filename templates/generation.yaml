@@ -1,0 +1,477 @@
+templates:
+  default:
+    name: "Default"
+    description: "Mathematical proof format for ProofGym"
+    template: |
+      Your task is to write a proof solution to the following problem. Your proof will be graded by judges for correctness and completeness. When you write your proof, follow these guidelines:
+      - You are creating a proof, not a proof outline. Each step should be carefully explained and documented. If not properly explained, the judge will assume that you cannot explain it, and therefore decrease your grade.
+      - You can use general theorems and lemmas, but only if they are well-known. As a rule of thumb: if the result has a name and is famous enough to have a Wikipedia page or something similar to describe it, it is allowed. Any result from papers that would not be taught in high school or low-level bachelor courses in mathematics should not be used. Any use of such results will immediately give you a zero grade.
+      - Do not skip computation steps in your proof. Clearly explain what transformations were done and why they are allowed in each step of a calculation.
+      - Your proof should be self-contained.
+      - If you are not sure about a specific step, or do not know how to prove an intermediate result, clearly state this. It is much preferable to indicate your uncertainty rather than making incorrect statements or claims.
+
+      FORMATTING GUIDELINES:
+      - You should write Markdown with LaTeX math. Do NOT use code fences (no ```).
+      - You should use correct LaTeX notation to write equations and mathematical symbols. You should encompass these equations in correct delimiters ("\\(" and "\\)" for inline math, "\\[" and "\\]" for block math) to enhance the clarity of your proof. **Do not use any unicode characters.**
+      - For multi-line derivations, wrap an aligned block INSIDE display math.
+      - Do not use other LaTeX environments or packages.
+
+      PROBLEM: {problem}
+
+    variables:
+      - problem
+  
+  default_with_hints_1:
+    name: "Default with Hints 1"
+    description: "Default format with hints 1"
+    template: |
+      Your task is to write a proof solution to the following problem. Your proof will be graded by judges for correctness and completeness. You will be given hints to help you solve the problem.
+      
+      When you write your proof, follow these guidelines:
+      - You are creating a proof, not a proof outline. Each step should be carefully explained and documented. If not properly explained, the judge will assume that you cannot explain it, and therefore decrease your grade.
+      - You can use general theorems and lemmas, but only if they are well-known. As a rule of thumb: if the result has a name and is famous enough to have a Wikipedia page or something similar to describe it, it is allowed. Any result from papers that would not be taught in high school or low-level bachelor courses in mathematics should not be used. Any use of such results will immediately give you a zero grade.
+      - Do not skip computation steps in your proof. Clearly explain what transformations were done and why they are allowed in each step of a calculation.
+      - You should use correct LaTeX notation to write equations and mathematical symbols. You should encompass these equations in appropriate symbols ("\\(" and "\\)" for inline math, "\\[" and "\\]" for block math) to enhance the clarity of your proof. Do not use any unicode characters.
+      - Your proof should be self-contained.
+      - If you are not sure about a specific step, or do not know how to prove an intermediate result, clearly state this. It is much preferable to indicate your uncertainty rather than making incorrect statements or claims.
+
+      PROBLEM: {problem}
+
+      HINT: {hint_1}
+
+    variables:
+      - problem
+      - hint_1
+
+  default_with_hints_2:
+    name: "Default with Hints 2"
+    description: "Default format with hints 2"
+    template: |
+      Your task is to write a proof solution to the following problem. Your proof will be graded by judges for correctness and completeness. You will be given hints to help you solve the problem.
+      
+      When you write your proof, follow these guidelines:
+      - You are creating a proof, not a proof outline. Each step should be carefully explained and documented. If not properly explained, the judge will assume that you cannot explain it, and therefore decrease your grade.
+      - You can use general theorems and lemmas, but only if they are well-known. As a rule of thumb: if the result has a name and is famous enough to have a Wikipedia page or something similar to describe it, it is allowed. Any result from papers that would not be taught in high school or low-level bachelor courses in mathematics should not be used. Any use of such results will immediately give you a zero grade.
+      - Do not skip computation steps in your proof. Clearly explain what transformations were done and why they are allowed in each step of a calculation.
+      - You should use correct LaTeX notation to write equations and mathematical symbols. You should encompass these equations in appropriate symbols ("\\(" and "\\)" for inline math, "\\[" and "\\]" for block math) to enhance the clarity of your proof. Do not use any unicode characters.
+      - Your proof should be self-contained.
+      - If you are not sure about a specific step, or do not know how to prove an intermediate result, clearly state this. It is much preferable to indicate your uncertainty rather than making incorrect statements or claims.
+
+      PROBLEM: {problem}
+
+      HINT: 
+      - {hint_1}
+      - {hint_2}
+
+    variables:
+      - problem
+      - hint_1
+      - hint_2
+  
+  default_with_hints_3:
+    name: "Default with Hints 3"
+    description: "Default format with hints 3"
+    template: |
+      Your task is to write a proof solution to the following problem. Your proof will be graded by judges for correctness and completeness. You will be given hints to help you solve the problem.
+      
+      When you write your proof, follow these guidelines:
+      - You are creating a proof, not a proof outline. Each step should be carefully explained and documented. If not properly explained, the judge will assume that you cannot explain it, and therefore decrease your grade.
+      - You can use general theorems and lemmas, but only if they are well-known. As a rule of thumb: if the result has a name and is famous enough to have a Wikipedia page or something similar to describe it, it is allowed. Any result from papers that would not be taught in high school or low-level bachelor courses in mathematics should not be used. Any use of such results will immediately give you a zero grade.
+      - Do not skip computation steps in your proof. Clearly explain what transformations were done and why they are allowed in each step of a calculation.
+      - You should use correct LaTeX notation to write equations and mathematical symbols. You should encompass these equations in appropriate symbols ("\\(" and "\\)" for inline math, "\\[" and "\\]" for block math) to enhance the clarity of your proof. Do not use any unicode characters.
+      - Your proof should be self-contained.
+      - If you are not sure about a specific step, or do not know how to prove an intermediate result, clearly state this. It is much preferable to indicate your uncertainty rather than making incorrect statements or claims.
+
+      PROBLEM: {problem}
+
+      HINT: 
+      - {hint_1}
+      - {hint_2}
+      - {hint_3}
+
+    variables:
+      - problem
+      - hint_1
+      - hint_2
+      - hint_3
+
+  problem_solving:
+    name: "Problem Solving"
+    description: "Problem solving format for ProofGym"
+    template: |
+      Return your final response within \\boxed{{}}. {problem}
+
+    variables:
+      - problem
+  
+  evaluation:
+    name: "Evaluation"
+    description: "Evaluation a given proof"
+    template: |
+      You are judging the correctness of an LLM-generated proof for a math problem.
+      ### Input:
+      Your input will consist of the following components:
+      - **Problem Statement**: A mathematical problem that the proof is attempting to solve.
+      - **Proof Solution**: The proof that you need to evaluate. This proof may contain errors, omissions, or unclear steps. The proof was generated by another language model.
+
+      ### Output format:
+      Please summarize your analysis of the proof concisely. 
+      If you believe the proof is correct, end your analysis with \\boxed{{correct}}. If you believe the proof is incorrect, end your
+      analysis with \\boxed{{incorrect}}.
+
+      ### How the solution should be graded:
+      A solution should be considered correct even if it would earn 5+/7 points in a standard grading format. Examples of small penalties
+      worth 1 point are if the solution:
+      - Makes a small computational mistake that can be easily fixed
+      - Misses an edge case which can be easily proven/disproven
+      - Skips over a step that follows without much reasoning or manual work
+      Depending on the severity and the context, you may also not penalise a given error. On the other hand, a solution should be marked as
+      incorrect if:
+      - It marks a step as trivial, if it is not immediately obvious with little reasoning why this would be the case.
+      - It omits algebra-heavy computational steps, regardless of whether or not it has outlined the methodology. Skipping shorter
+      computations should be permitted.
+      - Generalizes over a pattern without rigorously describing the pattern, or without proving any relevant properties.
+      - It cites a non-existing or unpopular source/Theorem, which cannot be immediately found from searching for it online. Thus, any
+      theorems that can be immediately found and have a Wikipedia article are allowed.
+      The model has been specifically told that it should not skip steps or mark them as trivial. Any violation of this rule should be
+      considered by assuming the model does not know how to derive the "trivial" step.
+
+      ### Problem Statement:
+      {problem}
+
+      ### Model Solution:
+      {solution}
+
+    variables:
+      - problem
+      - solution
+  
+  evaluation_with_final_answer:
+    name: "Evaluation with Final Answer"
+    description: "Evaluation a given proof with a final answer"
+    template: |
+      You are an expert judge evaluating an AI-generated solution to a math problem. Your evaluation must be based *exclusively* on a comparison between the final answer provided in the model's solution and the established correct answer.
+
+      Your task is to:
+      1.  Carefully extract the final answer from the **Model Solution**. The final answer is typically found at the very end of the text, often inside a `\\boxed{{}}` command or following a concluding phrase like "The final answer is...".
+      2.  Compare the extracted answer to the given **Correct Answer**.
+      3.  Determine if the model's answer is mathematically equivalent to the correct answer.
+
+      **Criteria for Correctness**
+
+      An answer is considered **correct** if it is mathematically equivalent to the **Correct Answer**, even if it's presented in a different format. Consider the following forms of equivalence:
+
+      * **Numerical:** `0.5` is equivalent to `1/2` or `50%`. `$1,000` is equivalent to `$10^3$`.
+      * **Symbolic:** An answer of `$x = 5$` is equivalent to `5`. An equation like `$y = 2x + 1$` is equivalent to `$y - 2x - 1 = 0$`.
+      * **Simplification:** Unsimplified forms are acceptable if they are mathematically equal to the correct answer. For example, `$\\sqrt{{8}}$` is equivalent to `$2\\sqrt{{2}}$`.
+      * **Sets vs. Lists:** For sets, the order of elements does not matter (e.g., `{{1, 2, 3}}` is equivalent to `{{3, 1, 2}}`). For ordered pairs, vectors, or sequences, the order is critical (e.g., `(1, 2)` is not equivalent to `(2, 1)`).
+      * **Units:** If the correct answer includes units (e.g., `10 cm`), the model's answer must also include the correct units to be considered correct.
+
+      **Important:** Do not evaluate the reasoning, intermediate steps, or methodology of the **Model Solution**. A correct final answer derived from flawed logic is still marked as correct. Conversely, a brilliant method that results in an incorrect final answer is marked as incorrect.
+
+      ### Input:
+
+      Your input will consist of the following components:
+
+      * **Problem Statement**: A mathematical problem that the solution is attempting to solve.
+      * **Correct Answer**: The correct final answer to the problem.
+      * **Model Solution**: The solution that you need to evaluate. The solution was generated by another language model.
+
+      ### Output format:
+
+      Please summarize your analysis of the solution concisely.
+
+      If you believe the solution is correct, end your analysis with `\\boxed{{correct}}`. If you believe the solution is incorrect, end your analysis with `\\boxed{{incorrect}}`.
+
+      **Example 1 (Correct):**
+      The model's final answer is `$x=5, y=2$`, which is equivalent to the correct answer `$(5, 2)$`.
+      `\\boxed{{correct}}`
+
+      **Example 2 (Incorrect):**
+      The model's final answer is `144`. The correct answer is `144\\pi`. The model missed the `$\\pi$` factor.
+      `\\boxed{{incorrect}}`
+
+      ### Problem Statement:
+      {problem}
+
+      ### Correct Answer:
+      {correct_answer}
+
+      ### Model Solution:
+      {solution}
+
+    variables:
+      - problem
+      - correct_answer
+      - solution
+      
+      
+  evaluation_with_reference_solution:
+    name: "Evaluation with Reference Solution"
+    description: "Evaluation a given proof with a reference solution"
+    template: |
+      You are judging the correctness of an LLM-generated proof for a math problem.
+      ### Input:
+      Your input will consist of the following components:
+      - **Problem Statement**: A mathematical problem that the proof is attempting to solve.
+      - **Reference Solution**: This solution is the correct solution to the problem. It is provided to you as a reference to help you judge the correctness of the model solution.
+      - **Model Solution**: The proof that you need to evaluate. This proof may contain errors, omissions, or unclear steps. The proof was generated by another language model.
+
+      ### Output format:
+      Please summarize your analysis of the proof concisely. 
+      If you believe the proof is correct, end your analysis with \\boxed{{correct}}. If you believe the proof is incorrect, end your
+      analysis with \\boxed{{incorrect}}.
+
+      ### How the solution should be graded:
+      A solution should be considered correct even if it would earn 5+/7 points in a standard grading format.
+      Examples of small penalties worth 1 point are if the solution:
+      - Makes a small computational mistake that can be easily fixed
+      - Misses an edge case which can be easily proven/disproven
+      - Skips over a step that follows without much reasoning or manual work
+      
+      On the other hand, a solution should be marked as incorrect if:
+      - The problem asks for a final answer (e.g., a math expression) and the model solution does not provide a final answer or the provided answer is different from the one in reference solution.
+      - It marks a step as trivial, if it is not immediately obvious with little reasoning why this would be the case.
+      - It omits algebra-heavy computational steps, regardless of whether or not it has outlined the methodology. Skipping shorter
+      computations should be permitted.
+      - Generalizes over a pattern without rigorously describing the pattern, or without proving any relevant properties.
+      - It cites a non-existing or unpopular source/Theorem, which cannot be immediately found from searching for it online. Thus, any theorems that can be immediately found and have a Wikipedia article are allowed.
+      - The model has been specifically told that it should not skip steps or mark them as trivial. Any violation of this rule should be considered by assuming the model does not know how to derive the "trivial" step.
+
+      ### Problem Statement:
+      {problem}
+
+      ### Reference Solution:
+      {reference_solution}
+
+      ### Model Solution:
+      {solution}
+
+    variables:
+      - problem
+      - reference_solution
+      - solution
+  
+  hint_generation:
+    name: "Hint Generation"
+    description: "Generate a hint for a given problem"
+    template: |
+      Generate a structured set of three progressively explicit hints for a given mathematical problem that requires a proof or detailed reasoning. The goal is to guide another model to construct the solution logically. The output must be in JSON format for easy parsing.
+
+      ## Instructions
+
+      You are an expert mathematics tutor. Your task is to analyze the provided problem and its full solution to create a sequence of three scaffolded hints.
+
+      **Crucially, the problems you will receive require a formal proof or a step-by-step reasoning process, not just a final answer.** Your hints must guide the construction of this logical argument, focusing on the how and why rather than just the what.
+
+      **Your Task: Generate a JSON array containing three hint objects, following this specific structure:**
+
+      1. **Hint 1: Conceptual & Strategic Hint.**  This first hint should combine the high-level concept with the core strategy. It should identify the relevant area of mathematics or theorem and allude to the key insight or "trick" needed to make progress. It answers the question: "What's the big picture and what's the clever idea I need to use?"
+      2. **Hint 2: Starting the Proof.** This hint provides a concrete starting point. It should tell the user exactly how to begin writing the proof—the initial assumption, definition, or equation to state. It answers the question: "How do I write down the first step?" Example: "Begin by writing: 'Assume for the sake of contradiction that $\sqrt{{2}}$ is a rational number.' Then, express $\sqrt{{2}}$ as a fraction $\frac{{p}}{{q}}$ in its lowest terms."
+      3. **Hint 3: The Crucial Next Step(s).** This is the most direct hint. It should focus on the main hurdle in the proof, providing a specific instruction for a key calculation, substitution, or logical leap. Crucially, it should not give away the entire remaining proof or the final conclusion. It must only unblock the user from the hardest part. It answers the question: "I'm stuck in the middle, what specific action do I take now?"
+
+      ## Output Format
+      Your final output must be a single, valid JSON array containing the three hint objects as specified. Do not include any other text or explanation outside of the JSON structure.
+
+      ```json
+      [
+        {{ 
+          "level": 1, 
+          "title": "Conceptual & Strategic Hint", 
+          "text": "[Your text for the first hint]" 
+        }},
+        {{ 
+          "level": 2, 
+          "title": "Starting the Proof", 
+          "text": "[Your text for the second hint]"
+        }},
+        {{ 
+          "level": 3, 
+          "title": "The Crucial Next Step",
+          "text": "[Your text for the third hint]"
+        }}
+      ]
+      ```
+
+      ## Inputs
+
+      ### The Problem (P)
+      {problem}
+
+      ### The Correct Solution (S)
+      {solution}
+
+    variables:
+      - problem
+      - solution
+  
+  mathjax_formatting:
+    name: "MathJax Formatting"
+    description: "Format a given problem using MathJax"
+    template: |
+      You are an expert in LaTeX formatting, specializing in making mathematical text render correctly in MathJax. Your task is to take the text I provide and correct ONLY its LaTeX formatting.
+
+      **Instructions:**
+      1.  Read through the text and identify all mathematical expressions, variables, and symbols.
+      2.  Ensure all inline mathematics is properly enclosed in single dollar signs (e.g., `$f(x) = x^2$`).
+      3.  Ensure all display-style equations (equations on their own line) are properly enclosed in double dollar signs (e.g., `$$ \int_a^b x^2 \,dx $$`).
+      4.  Correct any invalid or missing LaTeX commands. For example, change `x^2` to `$x^2$`, `delta` to `$\delta$`, or `integral` to `$\int$`.
+
+      **Crucial Constraints:**
+      * **DO NOT** alter the mathematical logic, steps, or numerical answers.
+      * **DO NOT** rephrase, rewrite, or "improve" the prose or explanations.
+      * **DO NOT** add or remove any steps from the solution.
+      * Your sole function is to act as a formatter.
+
+      ---
+      **Example of the Task:**
+
+      **## Original Badly Formatted Text:**
+      Let the function be f(x) = x^2 + 2x. We want to find the derivative.
+      Using the power rule, the derivative f'(x) is 2x^(2-1) + 2x^(1-1) which simplifies to 2x + 2.
+      So the final answer is f'(x) = 2x + 2.
+
+      **## Your Correctly Formatted Output:**
+      Let the function be $f(x) = x^2 + 2x$. We want to find the derivative.
+      Using the power rule, the derivative $f'(x)$ is $2x^{{2-1}} + 2x^{{1-1}}$ which simplifies to $2x + 2$.
+      So the final answer is $f'(x) = 2x + 2$.
+      ---
+
+      Please only output the correctly formatted text. Do not include any other text or explanation.
+
+      Now, please apply these rules and correct the formatting for the following text:
+
+      {solution}
+
+    variables:
+      - solution
+  
+  marking_scheme:
+    name: "Marking Scheme"
+    description: "Marking scheme for a given problem"
+    template: |
+      You are an experienced Olympiad grader.
+      ★Treat the official solution as fully correct and authoritative; do not claim it contains errors or gaps.★
+      Your task is to write a complete, grader-friendly rubric for the problem and official solution below. The rubric must map a student’s proof to an integer score from **0 to 7**.
+
+      ────────────────────────────────────────────────────────────────────────────────
+
+      ### INSTRUCTIONS
+
+      Produce the marking scheme in **exactly** the following three sections.
+
+      1. **Checkpoints (max 7 pts total)**
+
+        * Break the solution into logically independent checkpoints with **integer** point values.
+
+          * Allocate **≥ 4 pts** to the main idea/critical steps; **≤ 3 pts** to routine work.
+        * If two items are mutually exclusive (solve the *same* logical gap), **nest** them and write **“award the larger only”**.
+        * **Parallel solution paths (non-additive):**
+
+          * If the official solution (or a student submission) admits more than one legitimate approach, write **parallel checkpoint chains** labeled “Chain A / Chain B / … (idea: …)”.
+          * **Start this section with a bold rule:** **Score exactly one chain — take the **maximum** subtotal among chains; do **not** add points across chains.**
+          * Within a chain, checkpoints may be \[additive]. For steps **shared across chains** (e.g., a lemma usable by multiple approaches), place them under a “Shared prerequisites” group with **\[max k]**, and state **“count at most once regardless of chain.”**
+        * For every bullet (or group), append either **\[additive]** or **\[max k]** to make the scoring rule unambiguous.
+        * Finish with a one-line **“Total (max 7)”** check that is consistent with the non-additivity rule.
+        * Never demand cosmetic labels or specific variable names unless essential to the logic.
+
+      2. **Zero-credit items**
+
+        * List common arguments or observations that **earn 0 points** (e.g., conjectures without proof—especially in geometry, routine restatements of the problem, or dead-ends).
+
+      3. **Deductions**
+
+        * Bullet each typical mistake with a **flat** penalty (**–1**, **–2**, or **“cap at x/7”**).
+        * Apply **at most the single largest** deduction; never reduce a score below 0.
+        * Target logic gaps, invalid claims, circular reasoning, or contradictions. Cosmetic slips (notation, arithmetic, wording) do **not** trigger deductions unless they break validity.
+        * If a student gives **multiple distinct proofs**, **grade the best one only** (no stacking). If proofs contain **contradictory claims**, apply an appropriate deduction (e.g., **cap at 5/7**).
+
+      ### IMPORTANT REQUIREMENTS
+
+      * Use **concise bullets** — no prose exposition of the official solution.
+      * **Arithmetic sanity checks:** per-chain checkpoint sums and \[max k] caps must make it impossible to exceed **7** overall; at least one chain must allow a perfect **7/7**.
+      * Do **not** introduce, “fix,” or critique the official solution.
+      * Avoid over-fragmenting: do not split routine algebra into 3+ separate 1-pt bullets.
+      * Keep notation consistent with the official solution; define any new symbols you introduce.
+
+      ────────────────────────────────────────────────────────────────────────────────
+
+      ### PROBLEM
+
+      {problem}
+
+      ### OFFICIAL SOLUTION
+
+      {solution}
+
+
+    variables:
+      - problem
+      - solution
+
+  marking_scheme_from_problem:
+    name: "Marking Scheme (Problem Only, 3-Section Free-form, starts at 'Checkpoints')"
+    description: "Derive a problem-specific 0–7 rubric from the problem text only (no reference). Output begins exactly at 'Checkpoints'."
+    template: |
+      You are an experienced Olympiad grader. You will NOT see any official/reference solution.
+
+      ## How to think (do this silently; do NOT output your thoughts)
+      - **Understand the target:** What must be proved/computed? What constitutes sufficiency vs necessity?
+      - **Map the structure:** Identify the core idea(s) likely required (e.g., invariant, extremal principle, induction, construction, convexity/monotonicity, parity, bounding, modular argument, graph/structural lemma).
+      - **Value partial results:** Useful midpoints include establishing the right invariant/monovariant; proving a key lemma; correct case split; constructing a valid candidate object; deriving tight bounds; verifying base + inductive step; proving existence before uniqueness; checking edge conditions; or reducing to a standard inequality/identity with justification.
+      - **Approach discovery:** Use **one set of checkpoints by default**. Add **Chains A/B/... only if** there are **substantively different approaches** (different core lemmas/tools/structures). Minor algebraic rewrites or re-orderings stay in a single chain.
+      - **Checkpoint design:** Each checkpoint must be **verifiable from the student’s proof** and award **integer points**. Assign **≥4 pts** across the core insight/critical steps; **≤3 pts** to routine finishing work. Prefer a few meaty checkpoints over many tiny ones.
+      - **Alternatives & sharing:** Use **Exclusive (award the larger only)** for mutually exclusive ways to close the same gap. If a step can support multiple approaches, mark it **[shared]** and set **max-shared k** (0..3 typical).
+      - **No hidden info:** Do NOT state or rely on any numeric/algebraic final answer or unstated lemma not forced by the problem. If a final value is required, require “arrives at the correct final result with justification” (do NOT write the value).
+      - **Sanity:** It must be impossible to exceed **7** points; at least one valid path should allow **7/7**.
+
+      ## Output rules (MANDATORY)
+      - Output **exactly three sections** with these headers, in this order:
+        1) `Checkpoints (max-shared k = ...)`
+        2) `Zero-credit items`
+        3) `Deductions`
+      - **Do NOT output anything before the line starting with `Checkpoints`** (no titles, IDs, or prose).
+      - Use literal tokens like `[pts N]`, `[shared]`, and the line `Exclusive (award the larger only):`.
+
+      ## Begin output below — first line MUST be the 'Checkpoints' header
+
+      Checkpoints (max-shared k = <0..3 or 0 if none>)
+      # EITHER a single-path list (default) …
+      - [pts 3] <C1: establish the core mechanism (e.g., invariant/construct/transform) and justify applicability>
+      - [pts 2] <C2: drive the main implication toward the claim; no unproven leaps>
+      - Exclusive (award the larger only):
+        * [pts 2] <C3a: full closure/verification (e.g., base+step / extremal case / uniqueness / correctness check)>
+        * [pts 1] <C3b: partial closure with a small justified gap>
+      # … OR, ONLY IF truly different approaches exist, introduce chains:
+      Chain A — idea: <one-line label (e.g., induction / invariant / extremal / convexity / parity)>
+      - [pts 3] <A1: core step>
+      - [pts 2] <A2: bridge step>
+      - Exclusive (award the larger only):
+        * [pts 2] <A3a: full closure>
+        * [pts 1] <A3b: partial closure>
+      Chain B — idea: <alternate core idea>
+      ...
+
+      Zero-credit items
+      - mere restatement of the problem without progress
+      - unproven “obvious” lemma that is non-trivial
+      - numerical/algebraic guess with no derivation
+      - contradiction claimed without identifying the invalid assumption
+
+      Deductions
+      - penalty −1: localized logical gap that doesn’t break the main line
+      - penalty −2: invalid lemma / unresolved contradiction / missing essential case
+      - cap at 5/7: circular reasoning or mutually inconsistent claims
+
+      ### Inputs
+      [PROBLEM]
+      {problem}
+    variables:
+      - problem
+
+
+# Global settings
+settings:
+  default_template: "default"
+  max_template_length: 64000
+  required_variables: ["problem"]

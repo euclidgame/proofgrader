@@ -1,0 +1,6 @@
+evaluators:
+  - single__o3__with_marking_scheme
+  - single__o3__with_reference_solution
+  - single__o3__with_reference_solution_and_marking_scheme
+  - single__o3__with_reference_solution_and_marking_scheme_flexible
+  - reflect-and-revise__A-o3__init-with_reference_solution_and_marking_scheme__B-o3__critic-critic_reflection__C-o3__final-final_verdict_from_critique

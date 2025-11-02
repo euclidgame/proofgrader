@@ -1,0 +1,2 @@
+evaluator,problems,problems_with_pairs,total_items,total_comparable_pairs,total_correct_pairs,micro_order_acc,macro_order_acc,macro_spearman,weighted_macro_spearman,macro_kendall_tau_b,weighted_macro_kendall_tau_b
+single__gpt-4o__basic,29.0,29.0,114.0,128.0,66.0,0.515625,0.5178160919540231,0.178422068489194,0.19353495919763988,0.15516617799169996,0.16797461895875665

@@ -48,14 +48,14 @@ def main() -> None:
         help="Prompt template name (used in single-stage workflow)",
     )
     p.add_argument(
-        "--data-version",
-        default="pilot",
-        help="Data version key used to derive default dataset and dump dir (e.g., pilot, v1, v2)",
+        "--data-dir",
+        required=True,
+        help="Data directory path (e.g., data/test_data). All evaluation outputs will go to <data-dir>/evaluation_outputs/",
     )
     p.add_argument(
         "--dataset",
         default=None,
-        help="Path to merged dataset JSONL. If omitted, defaults to evaluator_design/data/<data-version>/model_output.jsonl",
+        help="Path to solutions JSONL. If omitted, defaults to <data-dir>/model_solutions.jsonl",
     )
     p.add_argument(
         "--template-config",
@@ -65,7 +65,7 @@ def main() -> None:
     p.add_argument(
         "--dump-dir",
         default=None,
-        help="Directory to dump this run's raw outputs (evaluator_raw.jsonl only). If not set, defaults to eval_runs/<data-version>/<evaluator>__<template>__<timestamp> under this module.",
+        help="Directory to dump this run's raw outputs (evaluator_raw.jsonl only). If not set, defaults to <data-dir>/evaluation_outputs/evaluation_runs/<evaluator>__<template>__<timestamp>",
     )
     p.add_argument(
         "--evaluator-tag",
@@ -185,13 +185,17 @@ def main() -> None:
 
     show_run_info(args)
 
-    # Resolve dataset path using data version if not explicitly provided
+    # Resolve data directory and dataset path
+    data_dir = Path(args.data_dir)
+    if not data_dir.exists():
+        raise SystemExit(f"Data directory not found: {data_dir}")
+    
     if args.dataset:
         dataset_path = Path(args.dataset)
     else:
-        candidate = DATA_ROOT / str(args.data_version) / "model_output.jsonl"
-        dataset_path = candidate
+        dataset_path = data_dir / "model_solutions.jsonl"
         args.dataset = str(dataset_path)
+    
     if not dataset_path.exists():
         raise SystemExit(f"Dataset not found: {dataset_path}")
     template_config = Path(args.template_config)
@@ -238,7 +242,11 @@ def main() -> None:
     if args.dump_dir:
         dump_dir = Path(args.dump_dir)
     else:
-        base = OUTPUTS_ROOT / ("eval_runs_binary" if args.binary else "eval_runs") / str(args.data_version)
+        # Import helper functions from utils
+        from proofgrader.workflows.utils import get_evaluation_runs_dir
+        
+        # Use data-dir-specific evaluation_outputs directory
+        base = get_evaluation_runs_dir(data_dir, binary=args.binary)
         dump_dir = base / f"{default_tag}__{timestamp}"
     dump_dir.mkdir(parents=True, exist_ok=True)
 
@@ -257,6 +265,7 @@ def main() -> None:
     args.dump_dir = str(dump_dir)
     args.output_raw = str(output_raw)
     args.evaluator_tag = evaluator_tag
+    args.data_dir_path = data_dir  # Make data_dir path available to workflows
 
     # Dispatch
     WORKFLOWS[args.workflow](args)

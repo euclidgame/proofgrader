@@ -23,11 +23,16 @@ Examples:
         --model gemini-2.5-pro \
         --workflow decompose-then-judge
     
-    # Compute metrics
+    # Evaluate with metrics (requires expert_gradings.jsonl)
     python scripts/evaluate.py \
         --data-dir data/my_dataset \
         --model gemini-2.5-pro \
         --compute-metrics
+    
+    # Compute metrics only (skip evaluation, use existing results)
+    python scripts/evaluate.py \
+        --data-dir data/my_dataset \
+        --metrics-only
 """
 
 import sys
@@ -84,6 +89,11 @@ Examples:
       --data-dir data/my_dataset \\
       --model gemini-2.5-pro \\
       --compute-metrics
+  
+  # Metrics only (use existing evaluations)
+  python scripts/evaluate.py \\
+      --data-dir data/my_dataset \\
+      --metrics-only
   
   # List templates
   python scripts/evaluate.py --list-templates
@@ -147,10 +157,14 @@ Examples:
         help="Critic model (reflect-and-revise workflow)"
     )
     
-    # Metrics option
+    # Metrics options
     parser.add_argument(
         "--compute-metrics", action="store_true",
-        help="Compute metrics if expert gradings exist"
+        help="Compute metrics after evaluation (requires expert_gradings.jsonl)"
+    )
+    parser.add_argument(
+        "--metrics-only", action="store_true",
+        help="Only compute metrics (skip evaluation). Requires existing evaluations and expert_gradings.jsonl"
     )
     
     # Performance options
@@ -214,6 +228,63 @@ Examples:
     # Setup paths
     data_dir = Path(args.data_dir)
     
+    # If metrics-only mode, skip to metrics computation
+    if args.metrics_only:
+        print("\n" + "="*80)
+        print("METRICS COMPUTATION ONLY")
+        print("="*80)
+        print(f"Data directory: {data_dir}")
+        print("="*80 + "\n")
+        
+        # Jump directly to metrics computation
+        import subprocess
+        
+        # Check for expert gradings
+        expert_gradings_path = None
+        for name in ['expert_gradings.jsonl', 'evaluation_merged.jsonl', 'evaluations.jsonl']:
+            candidate = data_dir / name
+            if candidate.exists():
+                expert_gradings_path = candidate
+                break
+        
+        if not expert_gradings_path:
+            logger.error("\n❌ Cannot compute metrics: No ground truth file found!")
+            logger.error(f"\nLooked for in {data_dir}:")
+            logger.error("  - expert_gradings.jsonl (preferred)")
+            logger.error("  - evaluation_merged.jsonl")
+            logger.error("  - evaluations.jsonl")
+            logger.error("\nPlease add a ground truth file to the data directory.")
+            sys.exit(1)
+        
+        logger.info(f"✓ Ground truth file: {expert_gradings_path}")
+        
+        # Check that evaluations exist
+        eval_outputs_dir = data_dir / "evaluation_outputs" / "evaluator_gradings"
+        if not eval_outputs_dir.exists() or not list(eval_outputs_dir.iterdir()):
+            logger.error(f"\n❌ No evaluations found in {eval_outputs_dir}")
+            logger.error("\nRun evaluation first:")
+            logger.error(f"  python scripts/evaluate.py --data-dir {data_dir} --model gpt-4o")
+            sys.exit(1)
+        
+        # Run metrics
+        metrics_script = Path(__file__).parent.parent / "proofgrader" / "metrics" / "compute_evaluator_distances.py"
+        cmd = [sys.executable, str(metrics_script), "--data-dir", str(data_dir)]
+        
+        logger.info(f"\nRunning: {' '.join(cmd)}\n")
+        result = subprocess.run(cmd)
+        
+        if result.returncode != 0:
+            logger.error("\n❌ Metrics computation failed")
+            sys.exit(1)
+        
+        logger.info("\n" + "="*80)
+        logger.info("✓ METRICS COMPUTATION COMPLETE")
+        logger.info("="*80)
+        logger.info(f"Metrics: {data_dir}/evaluation_outputs/metrics/")
+        logger.info("="*80)
+        sys.exit(0)
+    
+    # Normal evaluation mode
     # Default dataset location
     if args.dataset:
         dataset_path = Path(args.dataset)
@@ -242,7 +313,7 @@ Examples:
         '--evaluator-model', args.model,
         '--workflow', args.workflow,
         '--dataset', str(dataset_path),
-        '--data-version', data_dir.name,
+        '--data-dir', str(data_dir),
         '--template', args.template,
     ]
     
@@ -272,63 +343,64 @@ Examples:
         workflow_main()
         logger.info("\n✓ Evaluation completed")
         
-        # Compute metrics if requested
-        if args.compute_metrics:
-            logger.info("\n" + "="*80)
-            logger.info("COMPUTING METRICS")
-            logger.info("="*80)
-            
-            # Find expert gradings
-            expert_gradings_path = None
-            for name in ['expert_gradings.jsonl', 'evaluation_merged.jsonl', 'evaluations.jsonl']:
-                candidate = data_dir / name
-                if candidate.exists():
-                    expert_gradings_path = candidate
-                    break
-            
-            if not expert_gradings_path:
-                logger.warning("No expert gradings found. Skipping metrics.")
-                logger.info("Looked for: expert_gradings.jsonl, evaluation_merged.jsonl, evaluations.jsonl")
-            else:
-                logger.info(f"Expert gradings: {expert_gradings_path}")
-                
-                # Import metrics
-                try:
-                    from proofgrader.metrics import compute_evaluator_distances
-                    
-                    # Determine evaluations directory
-                    if args.output_dir:
-                        eval_dir = Path(args.output_dir)
-                    else:
-                        # Default location from workflow_runner
-                        eval_dir = PROJECT_ROOT / "_archive" / "output_data" / "evaluator_outputs" / "evaluator_grades" / data_dir.name
-                    
-                    metrics_dir = data_dir / "metrics"
-                    metrics_dir.mkdir(parents=True, exist_ok=True)
-                    
-                    # Run metrics
-                    sys.argv = [
-                        'compute_metrics',
-                        '--merged-path', str(expert_gradings_path),
-                        '--eval-dir', str(eval_dir),
-                        '--out-dir', str(metrics_dir)
-                    ]
-                    
-                    compute_evaluator_distances.main()
-                    
-                    logger.info(f"✓ Metrics saved to: {metrics_dir}")
-                    
-                except Exception as e:
-                    logger.error(f"Error computing metrics: {e}")
-                    import traceback
-                    traceback.print_exc()
-        
     except SystemExit as e:
         if e.code != 0 and e.code is not None:
             logger.error(f"Evaluation failed with exit code {e.code}")
+            sys.argv = original_argv
             sys.exit(e.code)
     finally:
         sys.argv = original_argv
+    
+    # Compute metrics if requested (separate step after evaluation succeeds)
+    if args.compute_metrics:
+        logger.info("\n" + "="*80)
+        logger.info("COMPUTING METRICS")
+        logger.info("="*80)
+        
+        # Check for expert gradings (required for metrics)
+        expert_gradings_path = None
+        for name in ['expert_gradings.jsonl', 'evaluation_merged.jsonl', 'evaluations.jsonl']:
+            candidate = data_dir / name
+            if candidate.exists():
+                expert_gradings_path = candidate
+                break
+        
+        if not expert_gradings_path:
+            logger.warning("\n⚠️  Cannot compute metrics: No ground truth file found!")
+            logger.warning(f"\nLooked for in {data_dir}:")
+            logger.warning("  - expert_gradings.jsonl (preferred)")
+            logger.warning("  - evaluation_merged.jsonl")
+            logger.warning("  - evaluations.jsonl")
+            logger.info("\n💡 To compute metrics, add a ground truth file to the data directory, then run:")
+            logger.info(f"    python proofgrader/metrics/compute_evaluator_distances.py --data-dir {data_dir}")
+            logger.info("\nEvaluation completed successfully (without metrics).")
+            sys.exit(0)
+        
+        logger.info(f"✓ Ground truth file: {expert_gradings_path}")
+        
+        # Run metrics computation
+        import subprocess
+        metrics_script = Path(__file__).parent.parent / "proofgrader" / "metrics" / "compute_evaluator_distances.py"
+        
+        cmd = [
+            sys.executable,
+            str(metrics_script),
+            "--data-dir", str(data_dir)
+        ]
+        
+        logger.info(f"\nRunning: {' '.join(cmd)}\n")
+        result = subprocess.run(cmd)
+        
+        if result.returncode != 0:
+            logger.error("\n❌ Metrics computation failed")
+            sys.exit(1)
+        
+        logger.info("\n" + "="*80)
+        logger.info("✓ EVALUATION AND METRICS COMPLETE")
+        logger.info("="*80)
+        logger.info(f"Evaluations: {data_dir}/evaluation_outputs/evaluator_gradings/")
+        logger.info(f"Metrics: {data_dir}/evaluation_outputs/metrics/")
+        logger.info("="*80)
     
     sys.exit(0)
 

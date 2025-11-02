@@ -4,9 +4,9 @@ from typing import Any
 from .utils import (
     EVAL_OUT_DIR,
     PROMPT_TEMPLATES_CONFIG,
+    get_evaluator_gradings_dir,
     run_main,
     write_per_generator_eval,
-    run_metrics,
     build_augmented_dataset_from_raw,
 )
 
@@ -62,9 +62,9 @@ def run_workflow(args: Any) -> None:
 
     # Write per-generator evaluator grades for Stage A (initial run)
     try:
-        # Version-aware mirror directory for outputs
-        a_base_dir = EVAL_OUT_DIR
-        a_mirror_dir = a_base_dir / str(getattr(args, "data_version", "")) if getattr(args, "data_version", None) else a_base_dir
+        # Data-dir-aware mirror directory for outputs
+        data_dir_path = getattr(args, "data_dir_path", None)
+        a_mirror_dir = get_evaluator_gradings_dir(data_dir_path) if data_dir_path else EVAL_OUT_DIR
         # Use a stage-specific tag to avoid clobbering Stage C outputs
         a_tag = (
             f"reflect-and-revise__A-{init_model}__init-{args.template}__stage_a_initial"
@@ -118,8 +118,7 @@ def run_workflow(args: Any) -> None:
 
     # Write per-generator evaluator grades for Stage B (self-critique)
     try:
-        b_base_dir = EVAL_OUT_DIR
-        b_mirror_dir = b_base_dir / str(getattr(args, "data_version", "")) if getattr(args, "data_version", None) else b_base_dir
+        b_mirror_dir = get_evaluator_gradings_dir(data_dir_path) if data_dir_path else EVAL_OUT_DIR
         b_tag = (
             f"reflect-and-revise__B-{critic_model}__critic-{critic_template}__stage_b_critique"
             if not getattr(args, "evaluator_tag", None)
@@ -170,9 +169,8 @@ def run_workflow(args: Any) -> None:
     )
     evaluator_tag = args.evaluator_tag or default_tag
 
-    # Version-aware mirror directory
-    base_dir = EVAL_OUT_DIR
-    mirror_dir = base_dir / str(getattr(args, "data_version", "")) if getattr(args, "data_version", None) else base_dir
+    # Data-dir-aware mirror directory
+    mirror_dir = get_evaluator_gradings_dir(data_dir_path) if data_dir_path else EVAL_OUT_DIR
 
     debug_report_path = c_dir / "parse_debug_report.json" if args.debug else None
     counts = write_per_generator_eval(
@@ -193,9 +191,7 @@ def run_workflow(args: Any) -> None:
     for gen, cnt in sorted(counts.items()):
         print(f"  {gen}: {cnt}")
     print(f"Raw dump dir: {args.dump_dir}")
-    print(f"Metrics input dir: {mirror_dir / evaluator_tag}")
-
-    run_metrics(getattr(args, "data_version", None))
+    print(f"Evaluator gradings dir: {mirror_dir / evaluator_tag}")
     print("Done.")
 
 

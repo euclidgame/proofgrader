@@ -9,20 +9,95 @@ from typing import Dict, Any, List, Tuple
 
 WORKFLOWS_DIR = Path(__file__).resolve().parent  # proofgrader/workflows/
 PROOFGRADER_DIR = WORKFLOWS_DIR.parent  # proofgrader/
-PROJECT_ROOT = PROOFGRADER_DIR.parent  # ProofGym/
+PROJECT_ROOT = PROOFGRADER_DIR.parent  # project root
 
+# Legacy paths (kept for backward compatibility)
 DATA_ROOT = PROJECT_ROOT / "data" / "evaluator_data"
 OUTPUTS_ROOT = PROJECT_ROOT / "outputs"
-DEFAULT_DATASET = DATA_ROOT / "pilot" / "model_outputs_merged.jsonl"  # legacy default; prefer --dataset or versioned path
+DEFAULT_DATASET = DATA_ROOT / "pilot" / "model_outputs_merged.jsonl"
 DEFAULT_TEMPLATE_CONFIG = PROJECT_ROOT / "templates"
 PROMPT_TEMPLATES_CONFIG = PROJECT_ROOT / "templates"
 EVAL_OUT_DIR = OUTPUTS_ROOT / "evaluator_grades"
 EVAL_OUT_DIR_BINARY = OUTPUTS_ROOT / "evaluator_grades_binary"
+
+# Scripts
 METRICS_SCRIPT = PROOFGRADER_DIR / "metrics" / "compute_evaluator_distances.py"
 METRICS_SCRIPT_BINARY = PROOFGRADER_DIR / "metrics" / "compute_evaluator_binary_metrics.py"
 DASHBOARD_SCRIPT = PROOFGRADER_DIR / "dashboard" / "build_dashboard.py"
 DASHBOARD_SCRIPT_BINARY = PROOFGRADER_DIR / "dashboard" / "build_dashboard_binary.py"
-EVALUATE_SCRIPT = PROJECT_ROOT / "scripts" / "evaluate.py"
+EVALUATE_SCRIPT = PROJECT_ROOT / "main.py"  # Main evaluation script (not the wrapper)
+
+
+def sanitize_model_name(model_name: str) -> str:
+    """
+    Sanitize model name for use in file/directory names.
+    Uses only the part after the last slash.
+    
+    Args:
+        model_name: Full model name (e.g., "openrouter/qwen/qwen3-235b")
+        
+    Returns:
+        Sanitized name (e.g., "qwen3-235b")
+    """
+    return str(model_name).split("/")[-1]
+
+
+def get_evaluation_outputs_dir(data_dir: Path) -> Path:
+    """
+    Get evaluation outputs directory for a data directory.
+    
+    Args:
+        data_dir: Data directory path (e.g., Path("data/test_data"))
+        
+    Returns:
+        Path to evaluation outputs: <data_dir>/evaluation_outputs/
+    """
+    return Path(data_dir) / "evaluation_outputs"
+
+
+def get_evaluator_gradings_dir(data_dir: Path, binary: bool = False) -> Path:
+    """
+    Get evaluator gradings directory.
+    
+    Args:
+        data_dir: Data directory path
+        binary: Whether to use binary gradings directory
+        
+    Returns:
+        Path: <data_dir>/evaluation_outputs/evaluator_gradings[_binary]/
+    """
+    eval_outputs = get_evaluation_outputs_dir(data_dir)
+    subdir = "evaluator_gradings_binary" if binary else "evaluator_gradings"
+    return eval_outputs / subdir
+
+
+def get_metrics_dir(data_dir: Path) -> Path:
+    """
+    Get metrics output directory.
+    
+    Args:
+        data_dir: Data directory path
+        
+    Returns:
+        Path: <data_dir>/evaluation_outputs/metrics/
+    """
+    return get_evaluation_outputs_dir(data_dir) / "metrics"
+
+
+def get_evaluation_runs_dir(data_dir: Path, binary: bool = False) -> Path:
+    """
+    Get evaluation runs directory.
+    
+    Args:
+        data_dir: Data directory path
+        binary: Whether to use binary runs directory
+        
+    Returns:
+        Path: <data_dir>/evaluation_outputs/evaluation_runs[_binary]/
+    """
+    eval_outputs = get_evaluation_outputs_dir(data_dir)
+    subdir = "evaluation_runs_binary" if binary else "evaluation_runs"
+    return eval_outputs / subdir
 
 
 def read_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -355,7 +430,9 @@ def write_per_generator_eval(
             })
 
     for r in rows:
-        pid = r.get("id")
+        # Try to get actual problem_id from metadata first, fallback to top-level id
+        meta = r.get('metadata') if isinstance(r.get('metadata'), dict) else {}
+        pid = meta.get('problem_id') or r.get('problem_id') or r.get("id")
         if not pid:
             continue
         gen_info = r.get("generation_info", {})
@@ -475,11 +552,20 @@ def write_per_generator_eval(
             continue
         gen = None
         mapping_source = None
-        meta = r.get('metadata') if isinstance(r.get('metadata'), dict) else {}
+        # meta already extracted above
+        # Try metadata.generator first, then metadata.model
+        meta_generator = meta.get('generator') if isinstance(meta.get('generator'), str) and meta.get('generator').strip() else None
         meta_model = meta.get('model') if isinstance(meta.get('model'), str) and meta.get('model').strip() else None
-        if meta_model:
+        
+        if meta_generator:
+            gen = meta_generator.strip()
+            mapping_source = 'metadata.generator'
+        elif meta_model:
             gen = meta_model.strip()
             mapping_source = 'metadata.model'
+        elif isinstance(r.get('generator'), str) and r.get('generator').strip():
+            gen = r.get('generator').strip()
+            mapping_source = 'top_level.generator'
         elif isinstance(r.get('model'), str) and r.get('model').strip():
             gen = r.get('model').strip()
             mapping_source = 'top_level.model'
@@ -529,10 +615,16 @@ def write_per_generator_eval(
 
     counts: Dict[str, int] = {}
     for gen, items in grouped.items():
-        mir_file = mirror_eval_dir / f"{gen}.eval.jsonl"
+        # Sanitize model name for both filename AND data (use only part after last slash)
+        sanitized_gen = sanitize_model_name(gen)
+        mir_file = mirror_eval_dir / f"{sanitized_gen}.eval.jsonl"
+        mir_file.parent.mkdir(parents=True, exist_ok=True)
         with mir_file.open("w", encoding="utf-8") as f:
             for it in items:
-                f.write(json.dumps(it, ensure_ascii=False) + "\n")
+                # Use sanitized generator name for matching with expert_gradings
+                it_with_gen = dict(it)
+                it_with_gen['generator'] = sanitized_gen  # Sanitized name (e.g., "qwen3-235b...")
+                f.write(json.dumps(it_with_gen, ensure_ascii=False) + "\n")
         counts[gen] = len(items)
 
     if debug:
@@ -565,20 +657,21 @@ def write_per_generator_eval(
     return counts
 
 
-def run_metrics(data_version: str = None) -> None:
+def run_metrics(data_dir: Path = None) -> None:
+    """Run metrics computation for a data directory."""
     cmd = [sys.executable, str(METRICS_SCRIPT)]
-    if data_version:
-        cmd.extend(["--data-version", str(data_version)])
+    if data_dir:
+        cmd.extend(["--data-dir", str(data_dir)])
     print("Running:", " ".join(cmd))
-    res = subprocess.run(cmd, cwd=str(EVALUATOR_DESIGN))
+    res = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
     if res.returncode != 0:
         raise SystemExit(f"metrics script failed with exit code {res.returncode}")
     
     cmd = [sys.executable, str(DASHBOARD_SCRIPT)]
-    if data_version:
-        cmd.extend(["--data-version", str(data_version)])
+    if data_dir:
+        cmd.extend(["--data-dir", str(data_dir)])
     print("Running:", " ".join(cmd))
-    res = subprocess.run(cmd, cwd=str(EVALUATOR_DESIGN))
+    res = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
     if res.returncode != 0:
         raise SystemExit(f"dashboard script failed with exit code {res.returncode}")
 
@@ -796,12 +889,13 @@ def write_per_generator_eval_binary(
     return counts
 
 
-def run_binary_metrics(data_version: str = None) -> None:
+def run_binary_metrics(data_dir: Path = None) -> None:
+    """Run binary metrics computation for a data directory."""
     cmd = [sys.executable, str(METRICS_SCRIPT_BINARY)]
-    if data_version:
-        cmd.extend(["--data-version", str(data_version)])
+    if data_dir:
+        cmd.extend(["--data-dir", str(data_dir)])
     print("Running:", " ".join(cmd))
-    res = subprocess.run(cmd, cwd=str(EVALUATOR_DESIGN))
+    res = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
     if res.returncode != 0:
         raise SystemExit(f"binary metrics script failed with exit code {res.returncode}")
 

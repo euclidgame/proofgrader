@@ -1,5 +1,5 @@
 templates:
-  basic_evaluation:
+  binary_basic_evaluation:
     name: "Evaluation"
     description: "Evaluation a given proof"
     template: |
@@ -54,7 +54,7 @@ templates:
       - problem
       - solution
   
-  with_reference_solution:
+  binary_with_reference_solution:
     name: "With Reference Solution"
     description: "Evaluation template with reference solution"
     template: |

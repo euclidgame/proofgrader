@@ -4,11 +4,10 @@ from typing import Any, Dict
 from .utils import (
     EVAL_OUT_DIR,
     EVAL_OUT_DIR_BINARY,
+    get_evaluator_gradings_dir,
     run_main,
     write_per_generator_eval,
     write_per_generator_eval_binary,
-    run_metrics,
-    run_binary_metrics,
 )
 
 
@@ -33,9 +32,18 @@ def run_workflow(args: Any) -> None:
             raise SystemExit(f"--skip-generation specified but raw file not found: {args.output_raw}")
 
     debug_report_path = Path(args.dump_dir) / "parse_debug_report.json" if args.debug else None
+    
+    # Compute data-dir-specific output directory
+    data_dir_path = getattr(args, "data_dir_path", None)
+    is_binary = getattr(args, "binary", False)
+    
+    if data_dir_path:
+        out_dir = get_evaluator_gradings_dir(data_dir_path, binary=is_binary)
+    else:
+        # Fallback to global outputs
+        out_dir = EVAL_OUT_DIR_BINARY if is_binary else EVAL_OUT_DIR
+    
     if getattr(args, "binary", False):
-        base_dir = EVAL_OUT_DIR_BINARY
-        out_dir = base_dir / str(getattr(args, "data_version", "")) if getattr(args, "data_version", None) else base_dir
         counts = write_per_generator_eval_binary(
             evaluator_tag=args.evaluator_tag,
             raw_results_path=Path(args.output_raw),
@@ -50,8 +58,6 @@ def run_workflow(args: Any) -> None:
             assume_id_composite=False,
         )
     else:
-        base_dir = EVAL_OUT_DIR
-        out_dir = base_dir / str(getattr(args, "data_version", "")) if getattr(args, "data_version", None) else base_dir
         counts = write_per_generator_eval(
             evaluator_tag=args.evaluator_tag,
             raw_results_path=Path(args.output_raw),
@@ -69,12 +75,7 @@ def run_workflow(args: Any) -> None:
     for gen, cnt in sorted(counts.items()):
         print(f"  {gen}: {cnt}")
     print(f"Raw dump dir: {args.dump_dir}")
-    print(f"Metrics input dir: {out_dir / args.evaluator_tag}")
-
-    if getattr(args, "binary", False):
-        run_binary_metrics(getattr(args, "data_version", None))
-    else:
-        run_metrics(getattr(args, "data_version", None))
+    print(f"Evaluator gradings dir: {out_dir / args.evaluator_tag}")
     print("Done.")
 
 

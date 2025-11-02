@@ -5,11 +5,10 @@ from .utils import (
     EVAL_OUT_DIR,
     EVAL_OUT_DIR_BINARY,
     PROMPT_TEMPLATES_CONFIG,
+    get_evaluator_gradings_dir,
     run_main,
     write_per_generator_eval,
     write_per_generator_eval_binary,
-    run_metrics,
-    run_binary_metrics,
     build_steps_dataset_from_raw,
 )
 
@@ -73,8 +72,13 @@ def run_workflow(args: Any) -> None:
     judge_evaluator_tag = args.evaluator_tag or judge_default_tag
 
     debug_report_path = judge_dump_dir / "parse_debug_report.json" if args.debug else None
+    
+    # Compute data-dir-specific output directory
+    data_dir_path = getattr(args, "data_dir_path", None)
+    is_binary = getattr(args, "binary", False)
+    out_dir = get_evaluator_gradings_dir(data_dir_path, binary=is_binary) if data_dir_path else (EVAL_OUT_DIR_BINARY if is_binary else EVAL_OUT_DIR)
+    
     if getattr(args, "binary", False):
-        out_dir = EVAL_OUT_DIR_BINARY
         counts = write_per_generator_eval_binary(
             evaluator_tag=judge_evaluator_tag,
             raw_results_path=judge_raw_path,
@@ -90,7 +94,6 @@ def run_workflow(args: Any) -> None:
             assume_id_composite=True,
         )
     else:
-        out_dir = EVAL_OUT_DIR
         counts = write_per_generator_eval(
             evaluator_tag=judge_evaluator_tag,
             raw_results_path=judge_raw_path,
@@ -109,12 +112,7 @@ def run_workflow(args: Any) -> None:
     for gen, cnt in sorted(counts.items()):
         print(f"  {gen}: {cnt}")
     print(f"Raw dump dir: {args.dump_dir}")
-    print(f"Metrics input dir: {out_dir / judge_evaluator_tag}")
-
-    if getattr(args, "binary", False):
-        run_binary_metrics(getattr(args, "data_version", None))
-    else:
-        run_metrics(getattr(args, "data_version", None))
+    print(f"Evaluator gradings dir: {out_dir / judge_evaluator_tag}")
     print("Done.")
 
 

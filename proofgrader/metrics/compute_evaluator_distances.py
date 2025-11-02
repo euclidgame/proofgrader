@@ -3,6 +3,7 @@ import argparse
 import json
 import math
 import os
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
 
@@ -10,12 +11,28 @@ import csv
 import random
 
 # Input locations (can be overridden via CLI)
-ROOT = Path(__file__).resolve().parent
-OUTPUTS_ROOT = ROOT / "outputs"
-DATA_ROOT = ROOT / "data"
-MERGED_PATH = DATA_ROOT / "iclr_submission" / "evaluation_merged.jsonl"
+SCRIPT_DIR = Path(__file__).resolve().parent  # proofgrader/metrics/
+PROOFGRADER_DIR = SCRIPT_DIR.parent  # proofgrader/
+PROJECT_ROOT = PROOFGRADER_DIR.parent  # project root
+
+# Add project root to Python path for imports
+sys.path.insert(0, str(PROJECT_ROOT))
+DATA_ROOT = PROJECT_ROOT / "data"
+OUTPUTS_ROOT = PROJECT_ROOT / "outputs"
+MERGED_PATH = DATA_ROOT / "expert_gradings.jsonl"  # Default ground truth file
 EVAL_DIR = OUTPUTS_ROOT / "evaluator_grades"
 OUT_DIR = OUTPUTS_ROOT / "reports"
+
+# Helper functions for data-dir-specific paths
+def get_evaluator_gradings_dir(data_dir: Path, binary: bool = False) -> Path:
+    """Get evaluator gradings directory for a data directory."""
+    eval_outputs = data_dir / "evaluation_outputs"
+    subdir = "evaluator_gradings_binary" if binary else "evaluator_gradings"
+    return eval_outputs / subdir
+
+def get_metrics_dir(data_dir: Path) -> Path:
+    """Get metrics output directory for a data directory."""
+    return data_dir / "evaluation_outputs" / "metrics"
 
 # Utilities
 
@@ -176,8 +193,20 @@ def load_merged_scores() -> Dict[Tuple[str, str], float]:
 
 def parse_evaluator_file(path: Path) -> Tuple[str, Dict[str, float]]:
     # returns (generator_name, mapping of problem_id -> score)
-    generator_name = path.stem.replace(".eval", "")
     rows = read_jsonl(path)
+    
+    # Try to get generator name from the data first (full model name)
+    # Fallback to filename (sanitized name)
+    generator_name = None
+    if rows:
+        # Check first record for generator field
+        first_record = rows[0]
+        generator_name = first_record.get('generator') or first_record.get('model')
+    
+    # Fallback to filename if not found in data
+    if not generator_name:
+        generator_name = path.stem.replace(".eval", "")
+    
     mapping: Dict[str, float] = {}
     for r in rows:
         problem_id = r.get("id") or r.get("problem_id")
@@ -419,8 +448,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Compute evaluator distance metrics")
     parser.add_argument("--eval-dir", default=None, help="Directory containing per-evaluator folders with *.eval.jsonl files")
     parser.add_argument("--out-dir", default=None, help="Directory to write reports to")
-    parser.add_argument("--merged-path", default=None, help="Path to evaluation_merged.jsonl with true scores per (problem_id, model)")
-    parser.add_argument("--data-version", default=None, help="Data version; if set, defaults adjust to outputs/evaluator_grades/<version> and outputs/reports/<version>")
+    parser.add_argument("--merged-path", default=None, help="Path to expert_gradings.jsonl with true scores per (problem_id, model)")
+    parser.add_argument("--data-dir", default=None, help="Data directory path (e.g., data/test_data). If set, defaults adjust to <data-dir>/evaluation_outputs/{evaluator_gradings,metrics}")
     parser.add_argument("--bootstrap-iters", type=int, default=0, help="If >0, add percentile CIs via problem-level bootstrap with this many resamples")
     parser.add_argument("--bootstrap-ci", type=float, default=0.95, help="CI level for bootstrap, e.g., 0.95 for 95%")
     parser.add_argument("--bootstrap-seed", type=int, default=13, help="Random seed for bootstrap resampling")
@@ -432,27 +461,43 @@ def main() -> None:
     args = parser.parse_args()
 
     global MERGED_PATH, EVAL_DIR, OUT_DIR
-    if args.eval_dir:
-        EVAL_DIR = Path(args.eval_dir)
-    elif args.data_version:
-        EVAL_DIR = OUTPUTS_ROOT / "evaluator_grades" / str(args.data_version)
-
-    if args.out_dir:
-        OUT_DIR = Path(args.out_dir)
-    elif args.data_version:
-        OUT_DIR = OUTPUTS_ROOT / "reports" / str(args.data_version)
-
-    if args.merged_path:
-        MERGED_PATH = Path(args.merged_path)
-    elif args.data_version:
-        # Prefer evaluation_test.jsonl for this data version, fallback to evaluation_merged.jsonl
-        candidate_test = DATA_ROOT / str(args.data_version) / "evaluation_test.jsonl"
-        candidate_merged = DATA_ROOT / str(args.data_version) / "evaluation_merged.jsonl"
-        candidate_legacy = ROOT / f"evaluation_merged_{args.data_version}.jsonl"
-        MERGED_PATH = candidate_merged
+    
+    # When data-dir is specified, adjust all paths to be relative to data-dir/evaluation_outputs/
+    if args.data_dir:
+        data_dir_path = Path(args.data_dir)
+        
+        # Set paths relative to data directory using local helper functions
+        EVAL_DIR = Path(args.eval_dir) if args.eval_dir else get_evaluator_gradings_dir(data_dir_path)
+        OUT_DIR = Path(args.out_dir) if args.out_dir else get_metrics_dir(data_dir_path)
+        
+        # Ground truth: look in data directory
+        if args.merged_path:
+            MERGED_PATH = Path(args.merged_path)
+        else:
+            # Try expert_gradings.jsonl first, then evaluation_merged.jsonl
+            candidate_expert = data_dir_path / "expert_gradings.jsonl"
+            candidate_merged = data_dir_path / "evaluation_merged.jsonl"
+            
+            if candidate_expert.exists():
+                MERGED_PATH = candidate_expert
+            elif candidate_merged.exists():
+                MERGED_PATH = candidate_merged
+            else:
+                # Default to expert_gradings.jsonl (will error if not found)
+                MERGED_PATH = candidate_expert
+    else:
+        # No data-dir: use explicit paths or defaults
+        EVAL_DIR = Path(args.eval_dir) if args.eval_dir else EVAL_DIR
+        OUT_DIR = Path(args.out_dir) if args.out_dir else OUT_DIR
+        MERGED_PATH = Path(args.merged_path) if args.merged_path else MERGED_PATH
 
     ensure_out_dir()
     ensure_eval_dir()
+    
+    print(f"Ground truth file: {MERGED_PATH}")
+    print(f"Evaluation directory: {EVAL_DIR}")
+    print(f"Output directory: {OUT_DIR}")
+    
     merged = load_merged_scores()
     problem_std = compute_problem_std_map()
 
@@ -904,6 +949,7 @@ def main() -> None:
     write_json(OUT_DIR / "per_evaluator_summary.json", per_evaluator_summary)
 
     # CSVs
+    # Simplified per-generator metrics - only macro metrics
     gen_fields = [
         "evaluator",
         "generator",
@@ -914,40 +960,12 @@ def main() -> None:
         "pearson",
         "spearman",
         "wta",
-        "min_diff",
-        "max_diff",
-        "norm_wta",
-        "norm_mae",
-        "norm_rmse",
-        "norm_bias",
-        "macro_problem_mae",
-        "macro_problem_rmse",
-        "macro_problem_bias",
-        "macro_problem_pearson",
-        "macro_problem_spearman",
-        "macro_problem_wta",
-        # Bootstrap CIs (if computed; columns included unconditionally for schema stability)
-        "macro_problem_mae_lo","macro_problem_mae_hi",
-        "macro_problem_rmse_lo","macro_problem_rmse_hi",
-        "macro_problem_bias_lo","macro_problem_bias_hi",
-        "macro_problem_pearson_lo","macro_problem_pearson_hi",
-        "macro_problem_spearman_lo","macro_problem_spearman_hi",
-        "macro_problem_wta_lo","macro_problem_wta_hi",
-        "macro_norm_mae",
-        "macro_norm_rmse",
-        "macro_norm_bias",
-        "macro_norm_pearson",
-        "macro_norm_spearman",
-        "macro_norm_wta",
-        "macro_norm_mae_lo","macro_norm_mae_hi",
-        "macro_norm_rmse_lo","macro_norm_rmse_hi",
-        "macro_norm_bias_lo","macro_norm_bias_hi",
-        "macro_norm_pearson_lo","macro_norm_pearson_hi",
-        "macro_norm_spearman_lo","macro_norm_spearman_hi",
-        "macro_norm_wta_lo","macro_norm_wta_hi",
     ]
-    write_csv(OUT_DIR / "per_evaluator_per_generator.csv", per_evaluator_generator_rows, gen_fields)
+    # Filter rows to only include specified fields
+    gen_rows_filtered = [{k: row.get(k) for k in gen_fields} for row in per_evaluator_generator_rows]
+    write_csv(OUT_DIR / "per_evaluator_per_generator.csv", gen_rows_filtered, gen_fields)
 
+    # Simplified per-source metrics - only macro metrics
     src_fields = [
         "evaluator",
         "source",
@@ -958,110 +976,25 @@ def main() -> None:
         "pearson",
         "spearman",
         "wta",
-        "min_diff",
-        "max_diff",
-        "norm_wta",
-        "norm_mae",
-        "norm_rmse",
-        "norm_bias",
-        "macro_problem_mae",
-        "macro_problem_rmse",
-        "macro_problem_bias",
-        "macro_problem_pearson",
-        "macro_problem_spearman",
-        "macro_problem_wta",
-        "macro_problem_mae_lo","macro_problem_mae_hi",
-        "macro_problem_rmse_lo","macro_problem_rmse_hi",
-        "macro_problem_bias_lo","macro_problem_bias_hi",
-        "macro_problem_pearson_lo","macro_problem_pearson_hi",
-        "macro_problem_spearman_lo","macro_problem_spearman_hi",
-        "macro_problem_wta_lo","macro_problem_wta_hi",
-        "macro_norm_mae",
-        "macro_norm_rmse",
-        "macro_norm_bias",
-        "macro_norm_pearson",
-        "macro_norm_spearman",
-        "macro_norm_wta",
-        "macro_norm_mae_lo","macro_norm_mae_hi",
-        "macro_norm_rmse_lo","macro_norm_rmse_hi",
-        "macro_norm_bias_lo","macro_norm_bias_hi",
-        "macro_norm_pearson_lo","macro_norm_pearson_hi",
-        "macro_norm_spearman_lo","macro_norm_spearman_hi",
-        "macro_norm_wta_lo","macro_norm_wta_hi",
     ]
-    write_csv(OUT_DIR / "per_evaluator_per_source.csv", per_evaluator_source_rows, src_fields)
+    # Filter rows to only include specified fields
+    src_rows_filtered = [{k: row.get(k) for k in src_fields} for row in per_evaluator_source_rows]
+    write_csv(OUT_DIR / "per_evaluator_per_source.csv", src_rows_filtered, src_fields)
 
+    # Simplified overall metrics - only macro metrics (averaged per-problem)
     overall_fields = [
         "evaluator",
         "count",
-        # Main metrics are macro per-problem
         "mae",
         "rmse",
         "bias",
         "pearson",
         "spearman",
         "wta",
-        "macro_problem_mae_lo","macro_problem_mae_hi",
-        "macro_problem_rmse_lo","macro_problem_rmse_hi",
-        "macro_problem_bias_lo","macro_problem_bias_hi",
-        "macro_problem_pearson_lo","macro_problem_pearson_hi",
-        "macro_problem_spearman_lo","macro_problem_spearman_hi",
-        "macro_problem_wta_lo","macro_problem_wta_hi",
-        "min_diff",
-        "max_diff",
-        "order_preserving_ratio",
-        # Also export pooled metrics for reference
-        "pooled_mae",
-        "pooled_rmse",
-        "pooled_bias",
-        "pooled_pearson",
-        "pooled_spearman",
-        "pooled_wta",
-        # Keep explicit macro columns for compatibility/debug
-        "macro_problem_mae",
-        "macro_problem_rmse",
-        "macro_problem_bias",
-        "macro_problem_pearson",
-        "macro_problem_spearman",
-        "macro_problem_wta",
     ]
-    write_csv(OUT_DIR / "per_evaluator_overall.csv", per_evaluator_overall_rows, overall_fields)
-
-    overall_norm_fields = [
-        "evaluator",
-        "count",
-        "norm_wta",
-        "norm_mae",
-        "norm_rmse",
-        "norm_bias",
-        "norm_pearson",
-        "norm_spearman",
-        "macro_norm_mae",
-        "macro_norm_rmse",
-        "macro_norm_bias",
-        "macro_norm_pearson",
-        "macro_norm_spearman",
-        "macro_norm_wta",
-        "macro_norm_mae_lo","macro_norm_mae_hi",
-        "macro_norm_rmse_lo","macro_norm_rmse_hi",
-        "macro_norm_bias_lo","macro_norm_bias_hi",
-        "macro_norm_pearson_lo","macro_norm_pearson_hi",
-        "macro_norm_spearman_lo","macro_norm_spearman_hi",
-        "macro_norm_wta_lo","macro_norm_wta_hi",
-    ]
-    write_csv(OUT_DIR / "per_evaluator_overall_normalized.csv", per_evaluator_overall_norm_rows, overall_norm_fields)
-
-    overall_macro_fields = [
-        "evaluator",
-        "num_generators",
-        "macro_mae",
-        "macro_rmse",
-        "macro_bias",
-        "macro_wta",
-        "macro_pearson",
-        "macro_spearman",
-    ]
-    write_csv(OUT_DIR / "per_evaluator_overall_macro.csv", per_evaluator_overall_macro_rows, overall_macro_fields)
+    # Filter rows to only include specified fields
+    overall_rows_filtered = [{k: row.get(k) for k in overall_fields} for row in per_evaluator_overall_rows]
+    write_csv(OUT_DIR / "per_evaluator_overall.csv", overall_rows_filtered, overall_fields)
 
     # Write stratified outputs by true-score bins (0-7)
     strat_fields = [

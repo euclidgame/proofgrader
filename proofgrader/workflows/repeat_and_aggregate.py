@@ -5,11 +5,10 @@ from collections import Counter
 from .utils import (
     EVAL_OUT_DIR,
     EVAL_OUT_DIR_BINARY,
+    get_evaluator_gradings_dir,
     run_main,
     write_per_generator_eval,
     write_per_generator_eval_binary,
-    run_metrics,
-    run_binary_metrics,
     read_jsonl,
 )
 
@@ -73,12 +72,10 @@ def run_workflow(args: Any) -> None:
             return str(name)
     base_tag = f"repeat-and-aggregate__{_short_model(args.evaluator_model)}__{template_name}"
 
-    # Version-aware base dirs
-    if getattr(args, "binary", False):
-        base_dir = EVAL_OUT_DIR_BINARY
-    else:
-        base_dir = EVAL_OUT_DIR
-    versioned_base_dir = base_dir / str(getattr(args, "data_version", "")) if getattr(args, "data_version", None) else base_dir
+    # Data-dir-aware base dirs
+    data_dir_path = getattr(args, "data_dir_path", None)
+    is_binary = getattr(args, "binary", False)
+    versioned_base_dir = get_evaluator_gradings_dir(data_dir_path, binary=is_binary) if data_dir_path else (EVAL_OUT_DIR_BINARY if is_binary else EVAL_OUT_DIR)
 
     per_run_tags: List[str] = []
     for i in range(num_runs):
@@ -227,12 +224,8 @@ def run_workflow(args: Any) -> None:
 
         print("Aggregated per-generator eval files written to:", agg_out_dir)
         print(f"Raw dump dir (per run): {args.dump_dir}")
-        print(f"Metrics input dir: {agg_out_dir}")
+        print(f"Evaluator gradings dir: {agg_out_dir}")
 
-    if getattr(args, "binary", False):
-        run_binary_metrics(getattr(args, "data_version", None))
-    else:
-        run_metrics(getattr(args, "data_version", None))
     print("Done.")
 
 

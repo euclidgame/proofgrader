@@ -2,31 +2,41 @@
 """
 ProofGrader Generation Script
 
-This script generates mathematical proofs/solutions using language models.
-Use this for solution generation tasks.
+Generate solutions from one or more models.
+Completely independent of evaluation - generate once, evaluate many times.
 
 Examples:
-    # Generate with default model
-    python scripts/generate.py --dataset squad --template math
+    # Generate from multiple models
+    python scripts/generate.py \
+        --data-dir data/my_dataset \
+        --models gpt-4 o3 gemini-2.5-pro
     
-    # Generate with specific model
-    python scripts/generate.py --model gemini-2.5-pro --template default
+    # Generate from single model
+    python scripts/generate.py \
+        --data-dir data/my_dataset \
+        --models gpt-4
     
-    # List available templates
-    python scripts/generate.py --list-templates
+    # Custom output location
+    python scripts/generate.py \
+        --data-dir data/my_dataset \
+        --models gpt-4 \
+        --output custom_solutions.jsonl
 """
 
 import sys
 import argparse
 import logging
+import json
 from pathlib import Path
+from typing import List, Dict, Any
 
-# Add parent directory to path to import proofgrader
+# Add parent directory to path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from proofgrader import InferenceEngine, config, PromptFormatter
+from proofgrader.data_validation import DataValidator
 
 # Set up logging
 logging.basicConfig(
@@ -41,67 +51,120 @@ logging.getLogger('openai._base_client').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 
+def read_jsonl(path: Path) -> List[Dict[str, Any]]:
+    """Read JSONL file."""
+    records = []
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                records.append(json.loads(line))
+    return records
+
+
+def write_jsonl(records: List[Dict[str, Any]], path: Path) -> None:
+    """Write JSONL file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        for record in records:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+    logger.info(f"Wrote {len(records)} records to {path}")
+
+
 def main():
-    """Main generation function with command line interface."""
+    """Main generation function."""
     parser = argparse.ArgumentParser(
-        description="ProofGrader Generation - Generate mathematical proofs and solutions",
+        description="Generate mathematical proofs and solutions (generation only)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic generation
-  python scripts/generate.py --dataset hendrycks/math --template math
+  # Generate from multiple models
+  python scripts/generate.py \\
+      --data-dir data/my_dataset \\
+      --models gpt-4 o3 gemini-2.5-pro
   
-  # Custom output location
-  python scripts/generate.py --output results/my_generations.jsonl
+  # Generate from single model
+  python scripts/generate.py \\
+      --data-dir data/my_dataset \\
+      --models gpt-4
   
-  # Limited examples for testing
-  python scripts/generate.py --max-examples 10
+  # Custom template
+  python scripts/generate.py \\
+      --data-dir data/my_dataset \\
+      --models gpt-4 \\
+      --template math
   
-  # Multiple samples per problem
-  python scripts/generate.py --n-sampling 5
+  # List templates
+  python scripts/generate.py --list-templates
         """
     )
     
-    # Model options
-    parser.add_argument("--model", type=str, default="gemini-2.5-pro",
-                       help="Model name to use (default: gemini-2.5-pro)")
+    # Data directory option (simpler interface)
+    parser.add_argument(
+        "--data-dir", type=str, required=True,
+        help="Directory containing problems.jsonl"
+    )
     
-    # Dataset options
-    parser.add_argument("--dataset", type=str, help="Dataset name or path to JSONL file")
-    parser.add_argument("--dataset-config", type=str, help="Dataset configuration/subset")
-    parser.add_argument("--dataset-split", type=str, default="train", help="Dataset split")
-    parser.add_argument("--problem-field", type=str, help="Field containing the problem")
-    parser.add_argument("--max-examples", type=int, help="Maximum number of examples")
+    # Model options (now supports multiple!)
+    parser.add_argument(
+        "--models", type=str, nargs='+', required=True,
+        help="One or more model names for generation"
+    )
     
     # Output options
-    parser.add_argument("--output", type=str, help="Output file path")
+    parser.add_argument(
+        "--output", type=str,
+        help="Output file path (default: data-dir/model_solutions.jsonl)"
+    )
     
     # Template options
-    parser.add_argument("--template", type=str, default="default", 
-                       help="Prompt template to use (default: default)")
-    parser.add_argument("--template-config", type=str, 
-                       help="Path to template YAML config file")
-    parser.add_argument("--list-templates", action="store_true",
-                       help="List available templates and exit")
-    parser.add_argument("--template-info", type=str, 
-                       help="Show detailed info about a specific template")
-    
-    # Generation options
-    parser.add_argument("--max-tokens", type=int, help="Maximum tokens to generate")
-    parser.add_argument("--temperature", type=float, help="Temperature for generation")
-    parser.add_argument("--n-sampling", type=int, default=1,
-                       help="Number of samples per problem (default: 1)")
+    parser.add_argument(
+        "--template", type=str, default="default",
+        help="Prompt template to use (default: default)"
+    )
+    parser.add_argument(
+        "--template-config", type=str,
+        help="Path to template YAML config file"
+    )
+    parser.add_argument(
+        "--list-templates", action="store_true",
+        help="List available templates and exit"
+    )
+    parser.add_argument(
+        "--template-info", type=str,
+        help="Show detailed info about a specific template"
+    )
     
     # Performance options
-    parser.add_argument("--max-concurrent", type=int, default=100,
-                       help="Maximum concurrent requests (default: 100)")
-    parser.add_argument("--no-cache", action="store_true",
-                       help="Disable caching of previous results")
+    parser.add_argument(
+        "--max-concurrent", type=int, default=100,
+        help="Maximum concurrent requests (default: 100)"
+    )
+    parser.add_argument(
+        "--max-problems", type=int,
+        help="Maximum number of problems (for testing)"
+    )
+    parser.add_argument(
+        "--no-cache", action="store_true",
+        help="Disable caching of previous results"
+    )
+    
+    # Validation options
+    parser.add_argument(
+        "--strict-validation", action="store_true",
+        help="Exit immediately if validation fails"
+    )
+    parser.add_argument(
+        "--skip-validation", action="store_true",
+        help="Skip validation checks"
+    )
     
     # Logging options
-    parser.add_argument("--log-level", type=str, default="INFO",
-                       choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-                       help="Set logging level (default: INFO)")
+    parser.add_argument(
+        "--log-level", type=str, default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Set logging level (default: INFO)"
+    )
     
     args = parser.parse_args()
     
@@ -137,57 +200,172 @@ Examples:
             print(f"Variables: {', '.join(info['variables'])}")
             sys.exit(0)
     
-    # Update config from arguments
-    if args.dataset:
-        config.dataset_name = args.dataset
-    if args.dataset_config:
-        config.dataset_config = args.dataset_config
-    if args.dataset_split:
-        config.dataset_split = args.dataset_split
-    if args.problem_field:
-        config.problem_field = args.problem_field
-    if args.max_examples:
-        config.max_examples = args.max_examples
-    if args.output:
-        config.output_path = args.output
-    if args.template_config:
-        config.prompt_template_config = args.template_config
-    if args.max_tokens:
-        config.max_tokens = args.max_tokens
-    if args.temperature:
-        config.temperature = args.temperature
+    # Setup paths
+    data_dir = Path(args.data_dir)
+    problems_path = data_dir / "problems.jsonl"
     
-    # Print configuration
+    if not problems_path.exists():
+        logger.error(f"problems.jsonl not found in {data_dir}")
+        sys.exit(1)
+    
+    # Output path
+    if args.output:
+        output_path = Path(args.output)
+    else:
+        output_path = data_dir / "model_solutions.jsonl"
+    
+    # Print overview
     print("\n" + "="*80)
-    print("ProofGrader - Generation Mode")
+    print("SOLUTION GENERATION")
     print("="*80)
-    print(f"Model: {args.model}")
-    print(f"Dataset: {config.dataset_name}")
+    print(f"Data directory: {data_dir}")
+    print(f"Problems: {problems_path}")
+    print(f"Models: {args.models}")
+    print(f"Output: {output_path}")
     print(f"Template: {args.template}")
-    print(f"Output: {config.output_path}")
-    print(f"Max concurrent: {args.max_concurrent}")
-    print(f"Sampling: {args.n_sampling}x per problem")
-    print(f"Cache: {'disabled' if args.no_cache else 'enabled'}")
+    print(f"Validation: {'Skipped' if args.skip_validation else ('Strict' if args.strict_validation else 'Enabled')}")
     print("="*80 + "\n")
     
-    # Run generation
-    engine = InferenceEngine(model_name=args.model)
-    success = engine.run_inference(
-        template=args.template,
-        max_concurrent=args.max_concurrent,
-        use_cache=not args.no_cache,
-        n_sampling=args.n_sampling,
-        max_examples=args.max_examples
-    )
+    # Validate problems
+    if not args.skip_validation:
+        logger.info("🔍 Validating input problems...")
+        validator = DataValidator()
+        problems_validation = validator.validate_problems(problems_path)
+        
+        if not problems_validation['valid']:
+            logger.error("❌ Problem validation failed!")
+            if problems_validation.get('duplicate_ids'):
+                logger.error(f"  Duplicate IDs: {problems_validation['duplicate_ids'][:5]}")
+            if problems_validation.get('missing_id', 0) > 0:
+                logger.error(f"  {problems_validation['missing_id']} problems without IDs")
+            
+            if args.strict_validation:
+                sys.exit(1)
+        else:
+            logger.info("✓ Problem validation passed\n")
     
-    sys.exit(0 if success else 1)
+    # Generate solutions
+    all_solutions = []
+    
+    for model_idx, model in enumerate(args.models):
+        logger.info(f"{'='*80}")
+        logger.info(f"Generating with {model} ({model_idx+1}/{len(args.models)})")
+        logger.info(f"{'='*80}\n")
+        
+        # Temporary output for this model
+        temp_output = output_path.parent / f"temp_{model.replace('/', '_')}.jsonl"
+        
+        # Configure engine
+        original_dataset = config.dataset_name
+        original_output = config.output_path
+        config.dataset_name = str(problems_path)
+        config.output_path = str(temp_output)
+        
+        if args.template_config:
+            config.prompt_template_config = args.template_config
+        
+        try:
+            engine = InferenceEngine(model_name=model)
+            
+            # Run inference (one response per problem)
+            success = engine.run_inference(
+                template=args.template,
+                max_concurrent=args.max_concurrent,
+                use_cache=not args.no_cache,
+                n_sampling=1,  # One solution per model
+                max_examples=args.max_problems
+            )
+            
+            if not success:
+                logger.error(f"Generation failed for {model}")
+                continue
+            
+            # Read and reformat
+            if temp_output.exists():
+                generated = read_jsonl(temp_output)
+                
+                for record in generated:
+                    problem_id = record.get('id', record.get('problem_id', 'unknown'))
+                    
+                    # Extract solution
+                    if 'responses' in record and isinstance(record['responses'], list):
+                        solution_text = record['responses'][0] if record['responses'] else ''
+                    else:
+                        solution_text = record.get('response', record.get('solution', ''))
+                    
+                    # Create solution record, preserving all fields
+                    solution_record = {
+                        'problem_id': problem_id,
+                        'generator': model,
+                        'solution': solution_text,
+                        'problem': record.get('problem', record.get('question', '')),
+                        'model': model,
+                        'generation_metadata': record.get('generation_info', {}),
+                        'reference_solutions': record.get('reference_solutions'),
+                        **{k: v for k, v in record.items()
+                           if k not in ['id', 'problem', 'question', 'response', 'responses',
+                                        'generation_info', 'token_usage', 'solution']}
+                    }
+                    
+                    # Remove None values
+                    solution_record = {k: v for k, v in solution_record.items() if v is not None}
+                    all_solutions.append(solution_record)
+                
+                # Clean up temp file
+                temp_output.unlink()
+                logger.info(f"✓ Generated {len([s for s in all_solutions if s['generator'] == model])} solutions\n")
+                
+        except Exception as e:
+            logger.error(f"Error generating with {model}: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            # Restore config
+            config.dataset_name = original_dataset
+            config.output_path = original_output
+    
+    if not all_solutions:
+        logger.error("No solutions generated!")
+        sys.exit(1)
+    
+    # Write all solutions
+    write_jsonl(all_solutions, output_path)
+    
+    # Validate
+    if not args.skip_validation:
+        logger.info("\n🔍 Validating generated solutions...")
+        validator = DataValidator()
+        solutions_validation = validator.validate_solutions(output_path, problems_path)
+        
+        if not solutions_validation['valid']:
+            logger.warning("⚠️  Solution validation found issues")
+            if solutions_validation.get('duplicate_composite_ids', 0) > 0:
+                logger.error("  CRITICAL: Duplicate solution IDs!")
+            if solutions_validation.get('orphan_solutions'):
+                logger.warning(f"  WARNING: {len(solutions_validation['orphan_solutions'])} orphan solutions")
+            
+            if args.strict_validation:
+                sys.exit(1)
+        else:
+            logger.info("✓ Solution validation passed")
+    
+    # Summary
+    print("\n" + "="*80)
+    print("GENERATION COMPLETE!")
+    print("="*80)
+    print(f"Solutions: {output_path}")
+    print(f"Total: {len(all_solutions)} solutions")
+    print(f"Problems: {len(set(s['problem_id'] for s in all_solutions))}")
+    print(f"Models: {len(set(s['generator'] for s in all_solutions))}")
+    print("="*80)
+    print("\nNext step - Evaluate:")
+    print(f"  python scripts/evaluate.py \\")
+    print(f"    --data-dir {data_dir} \\")
+    print(f"    --model gemini-2.5-pro")
+    print("="*80 + "\n")
+    
+    sys.exit(0)
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-

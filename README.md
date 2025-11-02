@@ -4,11 +4,12 @@ A framework for generating and evaluating mathematical proofs using large langua
 
 ## Overview
 
-ProofGrader provides **two independent scripts**:
+ProofGrader provides **three independent scripts**:
 - **`generate.py`**: Generate solutions from multiple models (run once)
+- **`generate_marking_schemes.py`**: Generate marking schemes for problems (optional, run once)
 - **`evaluate.py`**: Evaluate solutions with workflows (run many times with different evaluators)
 
-**Key principle**: Generation and evaluation are completely separate. Generate expensive solutions once, then evaluate with multiple evaluators without re-generating.
+**Key principle**: Generation and evaluation are completely separate. Generate expensive solutions once, optionally add marking schemes, then evaluate with multiple evaluators without re-generating.
 
 ---
 
@@ -62,7 +63,7 @@ python scripts/evaluate.py \
 
 ---
 
-## The Two Scripts
+## The Three Scripts
 
 ### 📝 `generate.py` - Solution Generation
 
@@ -96,6 +97,41 @@ python scripts/generate.py \
 - `solution`: Generated solution text
 - `reference_solutions`: Preserved from problems.jsonl
 - All other problem fields preserved
+
+---
+
+### 📋 `generate_marking_schemes.py` - Marking Scheme Generation (Optional)
+
+**Purpose**: Generate detailed grading rubrics for problems
+
+```bash
+python scripts/generate_marking_schemes.py \
+  --data-dir data/my_dataset \
+  --model gemini-2.5-pro
+```
+
+**Key Options**:
+- `--data-dir`: Directory with `problems.jsonl` (required)
+- `--model`: Model to use for generation (default: gemini-2.5-pro)
+- `--template`: Template name (default: `marking_scheme`)
+- `--output`: Output file (default: `data-dir/problems_with_marking_schemes.jsonl`)
+- `--overwrite`: Overwrite original problems.jsonl
+- `--max-problems`: Limit problems for testing
+
+**What it does**:
+1. ✅ Reads `problems.jsonl` with reference solutions
+2. 📋 Generates marking schemes using LLM
+3. 💾 Adds `marking_scheme` field to each problem
+4. ✅ Saves to new file (or overwrites if `--overwrite`)
+
+**Output**: Problems with added `marking_scheme` field containing:
+- Checkpoints with point values
+- Zero-credit items
+- Deductions for common errors
+
+**Why use it?**: Marking schemes improve evaluation consistency and enable more accurate grading with templates like `with_marking_scheme_and_reference`.
+
+See `MARKING_SCHEMES_GUIDE.md` for detailed usage.
 
 ---
 

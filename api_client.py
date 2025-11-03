@@ -1,36 +1,3 @@
-"""
-API client for calling remote language models (OpenAI, Gemini, Claude, etc.)
-
-This module provides a unified interface for calling various remote language models
-with features like rate limiting, retries, batch processing, and token usage tracking.
-
-Supported models:
-- OpenAI: GPT-4, GPT-5, o1, o3, etc.
-- Google: Gemini models
-- Anthropic: Claude models (via LiteLLM)
-- Any other model supported by LiteLLM
-
-Public API:
-    APIClient - Main client class with all functionality
-    
-    All other functions/classes are internal implementation details.
-
-Usage:
-    from api_client import APIClient
-    
-    # Create client
-    client = APIClient(default_model="gemini-2.5-pro")
-    
-    # Single request
-    response = client.get_response("What is 2+2?")
-    
-    # Batch async requests
-    responses = await client.get_responses_batch(prompts, max_concurrent=10)
-    
-    # Batch parallel (threaded)
-    responses = client.get_responses_parallel(prompts, max_workers=5)
-"""
-
 import asyncio
 import logging
 import time
@@ -48,13 +15,8 @@ logging.getLogger('openai._base_client').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 # Initialize API clients
-client = OpenAI()
 async_client = AsyncOpenAI()
-
-# Gemini configuration from environment variables
-GEMINI_PROJECT_ID = os.getenv("GEMINI_PROJECT_ID", "ramps-457621")
-GEMINI_LOCATION = os.getenv("GEMINI_LOCATION", "us-central1")
-gemini_client = genai.Client(vertexai=True, project=GEMINI_PROJECT_ID, location=GEMINI_LOCATION)
+gemini_client = genai.Client(vertexai=True)
 
 # Rate limiting configuration
 RATE_LIMITS = {
@@ -64,7 +26,7 @@ RATE_LIMITS = {
 }
 
 # Request timeout in seconds
-DEFAULT_TIMEOUT = 2400  # 40 minutes
+DEFAULT_TIMEOUT = 1200  # 40 minutes
 
 
 class RateLimiter:
@@ -227,13 +189,6 @@ async def _get_model_response_async(prompt: str, model_name: str, max_tokens: in
         # Use LiteLLM for other models
         else:
             kwargs = {"model": model_name, "messages": messages, "max_tokens": max_tokens, "timeout": DEFAULT_TIMEOUT}
-            
-            # Special handling for Claude with thinking
-            if "claude-3-7-sonnet" in model_name:
-                kwargs.update({
-                    "max_tokens": 32768,
-                    "thinking": {"type": "enabled", "budget_tokens": 16000}
-                })
             
             response = await litellm.acompletion(**kwargs)
             usage = _extract_usage(response)

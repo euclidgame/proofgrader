@@ -9,7 +9,7 @@ ProofGrader provides **three independent scripts**:
 - **`generate_marking_schemes.py`**: Generate marking schemes for problems (optional, run once)
 - **`evaluate.py`**: Evaluate solutions with workflows (run many times with different evaluators)
 
-**Key principle**: Generation and evaluation are completely separate. Generate expensive solutions once, optionally add marking schemes, then evaluate with multiple evaluators without re-generating.
+Generation and evaluation are completely separate. Generate expensive solutions once, optionally add marking schemes, then evaluate with multiple evaluators without re-generating.
 
 ---
 
@@ -34,15 +34,22 @@ cd proofgrader
 git lfs install
 git lfs pull  # Download large files (problems.jsonl, etc.)
 pip install -r requirements.txt
+```
 
-# 3. Set up API keys
+### API Keys
+
+```bash
 export OPENAI_API_KEY="your-key"
 export GOOGLE_API_KEY="your-key"
 export ANTHROPIC_API_KEY="your-key"
+
+export GOOGLE_APPLICATION_CREDENTIALS="your-credentials_json"
+
+export OPENROUTER_API_KEY="your-api-key"
 ```
+If you encounter problems with api calls, please refer to `proofgrader/api_client.py/_get_model_response_async` and modify it as you need.
 
 ### Your First Run
-
 ```bash
 # Create test data
 mkdir -p data/test
@@ -230,59 +237,88 @@ python scripts/evaluate.py \
 
 ## Complete Workflow
 
-### Step 1: Generate Solutions (Once)
+### Step 1: Prepare Problems with Reference Solutions and Generate Marking Schemes
+
+First, prepare your `problems.jsonl` with reference solutions:
+
+```bash
+mkdir -p data/my_dataset
+# Add problems.jsonl with id, problem, reference_solutions fields
+```
+
+Then generate marking schemes (optional but recommended):
+
+```bash
+python scripts/generate_marking_schemes.py \
+  --data-dir data/my_dataset \
+  --model gemini-2.5-pro \
+  --overwrite
+```
+
+**Output**: `data/my_dataset/problems.jsonl` (now includes `marking_scheme` field)
+
+---
+
+### Step 2: Generate Solutions
+
+Generate solutions from multiple models:
 
 ```bash
 python scripts/generate.py \
   --data-dir data/my_dataset \
-  --models gpt-4 o3 gemini-2.5-pro
+  --models gpt-4o o3 gemini-2.5-pro
 ```
 
 **Output**: `data/my_dataset/model_solutions.jsonl`
 
 ---
 
-### Step 2: Evaluate with Multiple Evaluators (Many Times)
+### Step 3: Evaluate with Multiple Evaluators
 
 ```bash
-# Evaluate with gemini
+# Basic evaluation
 python scripts/evaluate.py \
   --data-dir data/my_dataset \
   --model gemini-2.5-pro
 
-# Evaluate with gpt-4 (same solutions!)
+# With marking schemes (if generated in Step 1)
 python scripts/evaluate.py \
   --data-dir data/my_dataset \
-  --model gpt-4
+  --model gpt-4o \
+  --template with_marking_scheme_and_reference
 
-# Evaluate with o3
+# Different workflow
 python scripts/evaluate.py \
   --data-dir data/my_dataset \
-  --model o3
-
-# Try different workflow
-python scripts/evaluate.py \
-  --data-dir data/my_dataset \
-  --model gemini-2.5-pro \
-  --workflow decompose-then-judge
+  --model o3 \
+  --workflow decompose-then-judge \
+  --steps-model gemini-2.5-pro
 ```
 
-**Output**: `data/my_dataset/outputs/evaluations/*.eval.jsonl`
+**Output**: `data/my_dataset/evaluation_outputs/evaluator_gradings/`
 
 ---
 
-### Step 3: Compute Metrics (Optional)
+### Step 4: (Optional) Gather Expert Gradings and Compute Metrics
+
+If you have human expert scores, create `data/my_dataset/expert_gradings.jsonl`:
+
+```json
+{"problem_id": "problem-1", "model_name": "gpt-4o", "score": 6.0}
+{"problem_id": "problem-1", "model_name": "o3", "score": 7.0}
+```
+
+Then compute metrics to compare evaluators against experts:
 
 ```bash
 python scripts/evaluate.py \
   --data-dir data/my_dataset \
-  --model gemini-2.5-pro \
-  --compute-metrics
+  --metrics-only
 ```
 
-**Requirements**: Expert gradings must exist in data-dir
+**Output**: `data/my_dataset/evaluation_outputs/metrics/`
 
-**Output**: `data/my_dataset/metrics/` with correlation reports
+See `EXPERT_GRADINGS_FORMAT.md` for details on creating ground truth data
 
 ---
 
@@ -290,46 +326,24 @@ python scripts/evaluate.py \
 
 ```
 data/my_dataset/
-├── problems.jsonl              # Your input
-├── expert_gradings.jsonl       # Your expert scores (optional)
-├── model_solutions.jsonl       # Generated solutions
-└── outputs/
-    └── evaluations/             # Evaluation results
-        ├── evaluator_grades/
-        │   └── my_dataset/
-        │       ├── gpt-4.eval.jsonl
-        │       ├── gemini-2.5-pro.eval.jsonl
-        │       └── o3.eval.jsonl
-        └── metrics/             # Metrics (if --compute-metrics)
-            ├── per_evaluator_overall.csv
-            └── per_generator_overall.csv
-```
-
----
-
-## Why Two Separate Scripts?
-
-### 💰 Cost Savings
-Generate expensive o3 solutions **once** ($100/1M tokens), then evaluate with 5+ different evaluators (cheap) without re-generating.
-
-### 🔬 Fair Comparison
-All evaluators see **identical solutions** - true apples-to-apples comparison.
-
-### ⚡ Parallel Evaluations
-Run multiple evaluations simultaneously:
-```bash
-python scripts/evaluate.py --data-dir data/test --model gemini-2.5-pro &
-python scripts/evaluate.py --data-dir data/test --model gpt-4 &
-python scripts/evaluate.py --data-dir data/test --model o3 &
-wait
-```
-
-### 🔄 Flexibility
-Try different workflows on same solutions:
-```bash
-python scripts/evaluate.py --data-dir data/test --model gemini-2.5-pro --workflow single
-python scripts/evaluate.py --data-dir data/test --model gemini-2.5-pro --workflow decompose-then-judge
-python scripts/evaluate.py --data-dir data/test --model gemini-2.5-pro --workflow reflect-and-revise
+├── problems.jsonl                      # Input (with marking_scheme if Step 1 done)
+├── model_solutions.jsonl               # Step 2 output: Generated solutions
+├── expert_gradings.jsonl              # Step 4 input: Human expert scores (optional)
+└── evaluation_outputs/                 # All evaluation outputs
+    ├── evaluation_runs/                # Step 3: Raw evaluator outputs
+    │   ├── single__gemini-2.5-pro__basic__<timestamp>/
+    │   └── single__gpt-4o__with_marking_scheme__<timestamp>/
+    ├── evaluator_gradings/             # Step 3: Parsed per-generator scores
+    │   ├── single__gemini-2.5-pro__basic/
+    │   │   ├── gpt-4o.eval.jsonl
+    │   │   ├── o3.eval.jsonl
+    │   │   └── gemini-2.5-pro.eval.jsonl
+    │   └── single__gpt-4o__with_marking_scheme/
+    │       └── ...
+    └── metrics/                        # Step 4: Metrics (if expert_gradings exist)
+        ├── per_evaluator_overall.csv
+        ├── per_evaluator_per_generator.csv
+        └── per_evaluator_per_source.csv
 ```
 
 ---
@@ -420,297 +434,8 @@ python scripts/generate.py --data-dir data/test --models gpt-4 --strict-validati
 python scripts/generate.py --data-dir data/test --models gpt-4 --skip-validation
 # No validation (not recommended)
 ```
-
 ---
 
-## Troubleshooting
-
-### Issue: "Solutions file not found"
-
-**Error when running evaluate.py**:
-```
-Solutions file not found: data/my_dataset/model_solutions.jsonl
-Run generation first:
-  python scripts/generate.py --data-dir data/my_dataset --models gpt-4
-```
-
-**Fix**: Run generation first!
-
----
-
-### Issue: "Problems.jsonl not found"
-
-**Error**:
-```
-problems.jsonl not found in data/my_dataset
-```
-
-**Fix**: Create problems file in the data directory:
-```bash
-echo '{"id": "prob1", "problem": "Your question here"}' > data/my_dataset/problems.jsonl
-```
-
----
-
-### Issue: "Duplicate solution IDs"
-
-**Error**:
-```
-⚠️  Solution validation found issues
-  CRITICAL: Duplicate solution IDs!
-```
-
-**Fix**: Delete `model_solutions.jsonl` and regenerate:
-```bash
-rm data/my_dataset/model_solutions.jsonl
-python scripts/generate.py --data-dir data/my_dataset --models gpt-4
-```
-
----
-
-### Issue: Generation is slow
-
-**Strategies**:
-
-1. **Test with fewer problems first**:
-```bash
-python scripts/generate.py \
-  --data-dir data/test \
-  --models gpt-4 \
-  --max-problems 5
-```
-
-2. **Increase concurrency**:
-```bash
-python scripts/generate.py \
-  --data-dir data/test \
-  --models gpt-4 \
-  --max-concurrent 200
-```
-
-3. **Use faster models for testing**:
-```bash
---models gemini-2.5-pro  # Faster than o3
-```
-
-4. **Monitor progress**: Shows real-time ETA:
-```
-Generating responses: 45/100 (45.0%) | 2.3/s | ETA: 24s
-```
-
----
-
-## Templates
-
-Both scripts support custom templates:
-
-**List available templates**:
-```bash
-python scripts/generate.py --list-templates
-python scripts/evaluate.py --list-templates
-```
-
-**Get template details**:
-```bash
-python scripts/generate.py --template-info math
-```
-
-**Use custom template**:
-```bash
-python scripts/generate.py \
-  --data-dir data/test \
-  --models gpt-4 \
-  --template math
-```
-
-**Template locations**:
-- Generation: `templates/generation.yaml`
-- Evaluation: `templates/evaluation.yaml`
-- Workflows: `templates/workflows.yaml`
-
----
-
-## Metrics
-
-Metrics compare evaluator predictions with expert gradings.
-
-**Compute metrics**:
-```bash
-python scripts/evaluate.py \
-  --data-dir data/my_dataset \
-  --model gemini-2.5-pro \
-  --compute-metrics
-```
-
-**Requirements**:
-- Expert gradings file exists in `data-dir/`
-- Evaluations have been run
-
-**Metrics computed**:
-- Pearson correlation (linear relationship)
-- Spearman correlation (rank-based)
-- Kendall's tau-b (pairwise ordering)
-- MAE (Mean Absolute Error)
-- RMSE (Root Mean Square Error)
-- Bias (systematic over/under-prediction)
-
-**Output**: `data-dir/metrics/*.csv`
-
----
-
-## Advanced Usage
-
-### Python API
-
-```python
-from proofgrader import InferenceEngine
-from pathlib import Path
-
-# Generate
-engine = InferenceEngine(model_name="gpt-4")
-# ... configure and run ...
-```
-
-### Custom Evaluation Workflow
-
-Create workflow in `proofgrader/workflows/my_workflow.py`, then:
-
-```bash
-python scripts/evaluate.py \
-  --data-dir data/test \
-  --model gemini-2.5-pro \
-  --workflow my-workflow
-```
-
-See `proofgrader/workflows/README.md` for details.
-
----
-
-## FAQ
-
-### Q: How do I generate from multiple models?
-
-**A**: Use `--models` (plural) with space-separated model names:
-
-```bash
-python scripts/generate.py \
-  --data-dir data/test \
-  --models gpt-4 o3 gemini-2.5-pro
-```
-
----
-
-### Q: Can I evaluate the same solutions multiple times?
-
-**A**: **Yes! This is the whole point.** Generate once, evaluate many times:
-
-```bash
-# Generate once
-python scripts/generate.py --data-dir data/test --models gpt-4 o3
-
-# Evaluate with different evaluators
-python scripts/evaluate.py --data-dir data/test --model gemini-2.5-pro
-python scripts/evaluate.py --data-dir data/test --model gpt-4
-python scripts/evaluate.py --data-dir data/test --model o3
-python scripts/evaluate.py --data-dir data/test --model claude-3-opus
-```
-
----
-
-### Q: Where are solutions saved?
-
-**A**: By default: `data-dir/model_solutions.jsonl`
-
-Override with:
-```bash
-python scripts/generate.py --data-dir data/test --models gpt-4 --output custom.jsonl
-```
-
----
-
-### Q: Where are evaluations saved?
-
-**A**: `data-dir/outputs/evaluations/evaluator_grades/data-version/*.eval.jsonl`
-
-The exact location depends on workflow configuration.
-
----
-
-### Q: How do I resume if generation fails?
-
-**A**: Just re-run - caching is enabled by default:
-
-```bash
-# If interrupted, just run again
-python scripts/generate.py --data-dir data/test --models gpt-4
-# Skips already-completed problems
-```
-
----
-
-### Q: Can I run evaluations in parallel?
-
-**A**: Yes!
-
-```bash
-python scripts/evaluate.py --data-dir data/test --model gemini-2.5-pro &
-python scripts/evaluate.py --data-dir data/test --model gpt-4 &
-python scripts/evaluate.py --data-dir data/test --model o3 &
-wait
-```
-
----
-
-## Quick Reference
-
-### Essential Commands
-
-```bash
-# GENERATION (run once)
-python scripts/generate.py --data-dir DATA_DIR --models MODEL1 MODEL2 MODEL3
-
-# EVALUATION (run many times)
-python scripts/evaluate.py --data-dir DATA_DIR --model EVALUATOR
-
-# With metrics
-python scripts/evaluate.py --data-dir DATA_DIR --model EVALUATOR --compute-metrics
-
-# List templates
-python scripts/generate.py --list-templates
-python scripts/evaluate.py --list-templates
-
-# Validate data
-python proofgrader/data_validation.py --data-dir DATA_DIR
-```
-
-### Typical Workflow
-
-```bash
-# 1. Generate
-python scripts/generate.py --data-dir data/my_dataset --models gpt-4 o3 gemini-2.5-pro
-
-# 2. Evaluate with multiple evaluators
-for eval in gemini-2.5-pro gpt-4 o3; do
-  python scripts/evaluate.py --data-dir data/my_dataset --model $eval
-done
-
-# 3. Metrics
-python scripts/evaluate.py --data-dir data/my_dataset --model gemini-2.5-pro --compute-metrics
-```
-
----
-
-## Key Files
-
-| File | Purpose | Created By |
-|------|---------|------------|
-| `problems.jsonl` | Input problems | You (required) |
-| `expert_gradings.jsonl` | Expert scores | You (optional, for metrics) |
-| `model_solutions.jsonl` | Generated solutions | `generate.py` |
-| `*.eval.jsonl` | Evaluations | `evaluate.py` |
-| `metrics/*.csv` | Metrics reports | `evaluate.py --compute-metrics` |
-
----
 
 ## Project Structure
 
@@ -741,15 +466,3 @@ ProofGrader/
         └── outputs/                  # evaluate.py creates this
 ```
 
----
-
-## Support
-
-- 📝 GitHub Issues: [your-repo/issues]
-- 📚 Additional docs:
-  - `proofgrader/workflows/README.md` - Custom workflows
-  - `RELEASE_CHECKLIST.md` - Release procedures
-
----
-
-**That's everything!** Two simple scripts, complete independence, maximum flexibility. 🎉
